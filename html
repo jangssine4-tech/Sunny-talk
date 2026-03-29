@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sunny Talk — AI 영어 튜터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root {
+  --sky-start:#A8EDEA; --sky-end:#FED6E3;
+  --sky-male-start:#C2E9FB; --sky-male-end:#A1C4FD;
+  --purple:#2D1B69; --purple-l:#4A3296; --purple-pale:#EDE9FF;
+  --yellow:#FFD23F; --yellow-d:#E8B800;
+  --coral:#FF6B6B; --coral-l:#FFE5E5;
+  --sky:#4FC3F7; --sky-l:#E1F5FE;
+  --green:#69D98C; --green-l:#E8FFF0;
+  --teal:#00B4D8; --teal-l:#CAF0F8;
+  --white:#FFFFFF; --cream:#FFFBEF;
+  --text:#1A1035; --muted:#6B5FA0;
+  --shadow:0 8px 32px rgba(45,27,105,.18);
+  --shadow-sm:0 4px 16px rgba(45,27,105,.12);
+  --r:20px; --r-sm:14px; --r-xs:10px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Nunito',sans-serif;background:#1a1035;color:var(--text)}
+
+/* ── Screen system ─── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .3s ease,transform .3s cubic-bezier(.34,1.2,.64,1);z-index:1}
+.screen.active{opacity:1;pointer-events:all;transform:none}
+.screen.out{opacity:0;transform:translateY(-16px);transition:opacity .22s ease,transform .22s ease}
+
+/* ── Shared gradient backgrounds ─── */
+.bg-female{background:linear-gradient(160deg,#A8EDEA 0%,#FED6E3 50%,#ffecd2 100%)}
+.bg-male{background:linear-gradient(160deg,#C2E9FB 0%,#A1C4FD 50%,#d4e8fb 100%)}
+.bg-neutral{background:linear-gradient(160deg,#EDE9FF 0%,#d4e8fb 60%,#ffecd2 100%)}
+
+/* ── Phone frame wrapper ─── */
+.phone-frame{
+  width:100%; max-width:430px; min-height:100vh;
+  position:relative; margin:0 auto;
+  display:flex; flex-direction:column;
+}
+
+/* ── Buttons ─── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;border:none;border-radius:100px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;text-decoration:none}
+.btn:active{transform:scale(.95)!important}
+.btn-purple{background:var(--purple);color:#fff;box-shadow:0 6px 20px rgba(45,27,105,.4)}
+.btn-purple:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(45,27,105,.45)}
+.btn-yellow{background:var(--yellow);color:var(--purple);box-shadow:0 6px 20px rgba(255,210,63,.5)}
+.btn-yellow:hover{transform:translateY(-2px)}
+.btn-ghost{background:rgba(255,255,255,.85);color:var(--purple);box-shadow:var(--shadow-sm);backdrop-filter:blur(8px)}
+.btn-ghost:hover{background:#fff}
+
+/* ── Cards ─── */
+.card{background:rgba(255,255,255,.92);border-radius:var(--r);box-shadow:var(--shadow);backdrop-filter:blur(12px);padding:20px}
+.glass{background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-radius:var(--r-sm);box-shadow:var(--shadow-sm)}
+
+/* ── PIN ─── */
+.pin-dots{display:flex;gap:14px;margin:20px 0}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:3px solid rgba(45,27,105,.3);background:transparent;transition:all .18s ease}
+.pin-dot.filled{background:var(--purple);border-color:var(--purple);transform:scale(1.2)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:290px}
+.nk{aspect-ratio:1;border:none;border-radius:var(--r-sm);background:rgba(255,255,255,.88);color:var(--text);font-family:'Fredoka One',cursive;font-size:26px;box-shadow:0 3px 10px rgba(45,27,105,.12);cursor:pointer;transition:all .11s ease;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.nk:active{transform:scale(.91);background:var(--purple-pale)}
+.nk.del{font-size:18px;color:var(--muted)}
+
+/* ── Lesson grid ─── */
+.lesson-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;padding:0 16px 16px}
+.lcard{background:rgba(255,255,255,.9);border-radius:var(--r-sm);padding:16px 14px;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .18s ease;border:2.5px solid transparent;position:relative;overflow:hidden;backdrop-filter:blur(8px)}
+.lcard:active{transform:scale(.96)}
+.lcard.today{border-color:var(--yellow)}
+.lcard.today::before{content:"TODAY";position:absolute;top:9px;right:-22px;background:var(--yellow);color:var(--purple);font-size:8px;font-weight:900;padding:3px 26px;transform:rotate(45deg);letter-spacing:.5px}
+.lcard.done{opacity:.6}
+.lcard.done::after{content:"✓";position:absolute;bottom:10px;right:12px;color:var(--green);font-size:18px;font-weight:900}
+.licon{font-size:32px;margin-bottom:6px;display:block}
+.ltitle{font-weight:800;font-size:13px;margin-bottom:3px;color:var(--text)}
+.lsub{font-size:10px;color:var(--muted);font-weight:600}
+.llevel{display:inline-block;margin-top:7px;padding:2px 8px;border-radius:100px;font-size:9px;font-weight:900}
+.lv-b{background:var(--green-l);color:#1B7A40}
+.lv-i{background:var(--sky-l);color:#0D6E9A}
+.lv-a{background:var(--coral-l);color:#A83232}
+
+/* ── Convo screen chat ─── */
+.bubble{max-width:80%;padding:11px 15px;border-radius:18px;font-size:14px;line-height:1.55;font-weight:600;animation:bIn .22s cubic-bezier(.34,1.2,.64,1)}
+@keyframes bIn{from{opacity:0;transform:scale(.9) translateY(5px)}to{opacity:1;transform:none}}
+.b-ai{background:var(--purple);color:#fff;border-bottom-left-radius:4px;align-self:flex-start}
+.b-user{background:var(--yellow);color:var(--text);border-bottom-right-radius:4px;align-self:flex-end}
+.b-hint{background:rgba(255,255,255,.9);color:#0D6E9A;border-bottom-left-radius:4px;align-self:flex-start;font-size:12px;font-style:italic;border:1.5px solid var(--sky-l)}
+.typing-dots{display:flex;gap:4px;padding:3px 0}
+.typing-dots span{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.75);animation:db .8s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.14s}
+.typing-dots span:nth-child(3){animation-delay:.28s}
+@keyframes db{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+
+/* ── Mic button ─── */
+.speak-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  border:none;border-radius:100px;cursor:pointer;
+  font-family:'Fredoka One',cursive;font-size:20px;letter-spacing:.5px;
+  padding:16px 40px;color:var(--purple);
+  background:linear-gradient(135deg,var(--yellow) 0%,var(--green) 100%);
+  box-shadow:0 6px 24px rgba(255,210,63,.55);
+  transition:all .15s ease;
+}
+.speak-btn:active{transform:scale(.95)}
+.speak-btn.listening{
+  background:linear-gradient(135deg,var(--coral) 0%,#ff9b9b 100%);
+  box-shadow:0 6px 24px rgba(255,107,107,.55);
+  animation:spkPulse 1.1s ease-in-out infinite;
+  color:#fff;
+}
+.speak-btn:disabled{opacity:.45;cursor:not-allowed;animation:none}
+@keyframes spkPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+/* ── Status badge ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:800}
+.b-ok{background:var(--green-l);color:#1B7A40}
+.b-wait{background:var(--yellow);color:#7A5A00}
+.b-err{background:var(--coral-l);color:#A83232}
+.b-demo{background:var(--purple-pale);color:var(--purple)}
+
+/* ── Result chips ─── */
+.rchips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rchip{background:rgba(255,255,255,.85);border-radius:var(--r-sm);padding:14px;text-align:center;backdrop-filter:blur(8px)}
+.rchip .val{font-family:'Fredoka One',cursive;font-size:30px;color:var(--purple)}
+.rchip .lbl{font-size:10px;font-weight:800;color:var(--muted);margin-top:2px}
+
+/* ── Admin ─── */
+.asec{margin-bottom:24px}
+.asec h3{font-size:12px;font-weight:900;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px}
+.ifield{width:100%;padding:13px 15px;border:2px solid var(--purple-pale);border-radius:var(--r-xs);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);background:#fff;outline:none;transition:border-color .2s}
+.ifield:focus{border-color:var(--purple)}
+.sitem{background:#fff;border-radius:var(--r-xs);padding:12px 15px;margin-bottom:8px;box-shadow:var(--shadow-sm);display:flex;gap:10px;align-items:center}
+
+/* ── Toast ─── */
+#toast{position:fixed;bottom:36px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--text);color:#fff;padding:11px 22px;border-radius:100px;font-size:13px;font-weight:700;z-index:9999;transition:transform .28s cubic-bezier(.34,1.2,.64,1);white-space:nowrap;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── Floating vocab strip ─── */
+.vstrip{display:flex;gap:7px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.vstrip::-webkit-scrollbar{display:none}
+.vpill{flex-shrink:0;padding:7px 13px;background:rgba(255,255,255,.88);border-radius:100px;font-size:12px;font-weight:800;color:var(--purple);box-shadow:var(--shadow-sm);cursor:pointer;backdrop-filter:blur(8px)}
+.vpill:active{background:var(--purple-pale)}
+
+/* ── Character animations ─── */
+.c-body{animation:cBob 3.2s ease-in-out infinite;transform-origin:center bottom}
+@keyframes cBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.c-eye{animation:cBlink 4.5s ease-in-out infinite;transform-origin:center bottom}
+@keyframes cBlink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(0.08)}}
+.c-mouth.talking{animation:cTalk .18s ease-in-out infinite alternate}
+@keyframes cTalk{from{d:path("M52 78 Q64 86 76 78")}to{d:path("M52 75 Q64 92 76 75")}}
+.c-star{animation:cStarOrbit 6s linear infinite;transform-origin:center center}
+.c-star-rev{animation:cStarOrbit 8s linear infinite reverse;transform-origin:center center}
+@keyframes cStarOrbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.c-body.celebrate{animation:cCeleb 1.5s ease-in-out infinite}
+@keyframes cCeleb{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-10px) rotate(-4deg)}75%{transform:translateY(-6px) rotate(4deg)}}
+
+/* ── Star pop ─── */
+.star-pop{animation:sPop .5s cubic-bezier(.34,1.5,.64,1) forwards;opacity:0}
+.star-pop:nth-child(2){animation-delay:.15s}
+.star-pop:nth-child(3){animation-delay:.3s}
+@keyframes sPop{from{opacity:0;transform:scale(0) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+
+/* ── Scrollbar ─── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(45,27,105,.2);border-radius:2px}
+
+/* ── Utility ─── */
+.z1{position:relative;z-index:1}
+.tc{text-align:center}
+h1,h2,h3{font-family:'Fredoka One',cursive;letter-spacing:.3px}
+.fw9{font-weight:900}.fw8{font-weight:800}.fw7{font-weight:700}.fw6{font-weight:600}
+.fs11{font-size:11px}.fs12{font-size:12px}.fs13{font-size:13px}.fs14{font-size:14px}
+.col-m{color:var(--muted)}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}.mt24{margin-top:24px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
+.gap8{gap:8px}.gap10{gap:10px}.gap12{gap:12px}
+.flex{display:flex}.col{flex-direction:column}.ai-c{align-items:center}.jc-c{justify-content:center}
+.w100{width:100%}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════
+     SVG CHARACTER DEFINITIONS (reusable via <use>)
+     Mr. Ray (남자 선생님) & Ms. Lily (여자 선생님)
+════════════════════════════════════════════════════ -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+
+    <!-- ╔══════════════════════════════════╗
+         ║   MS. LILY  (여자 선생님)        ║
+         ╚══════════════════════════════════╝ -->
+    <g id="lily-full">
+      <!-- Star orbits -->
+      <g class="c-star" style="transform-origin:80px 90px">
+        <text x="134" y="38" font-size="15" opacity=".75">⭐</text>
+      </g>
+      <g class="c-star-rev" style="transform-origin:80px 90px">
+        <text x="14" y="140" font-size="12" opacity=".55">✨</text>
+      </g>
+      <!-- Shadow -->
+      <ellipse cx="80" cy="162" rx="42" ry="12" fill="#c9a0d8" opacity=".22"/>
+      <!-- Body / dress -->
+      <path d="M42 148 Q40 170 38 185 L122 185 Q120 170 118 148 Q100 138 80 138 Q60 138 42 148Z" fill="#FF9EAA"/>
+      <!-- Dress pattern dots -->
+      <circle cx="65" cy="162" r="3" fill="#fff" opacity=".6"/>
+      <circle cx="80" cy="168" r="3" fill="#fff" opacity=".6"/>
+      <circle cx="95" cy="162" r="3" fill="#fff" opacity=".6"/>
+      <circle cx="72" cy="175" r="2.5" fill="#fff" opacity=".5"/>
+      <circle cx="88" cy="175" r="2.5" fill="#fff" opacity=".5"/>
+      <!-- Collar / neckline -->
+      <path d="M68 140 Q80 150 92 140" fill="none" stroke="#fff" stroke-width="2" opacity=".7"/>
+      <!-- Cardigan/jacket -->
+      <path d="M42 148 Q50 144 68 140 L68 185 L38 185Z" fill="#C084E0" opacity=".8"/>
+      <path d="M118 148 Q110 144 92 140 L92 185 L122 185Z" fill="#C084E0" opacity=".8"/>
+      <!-- Flower pin -->
+      <circle cx="54" cy="155" r="7" fill="#FFD23F"/>
+      <circle cx="54" cy="155" r="3.5" fill="#FF6B6B"/>
+      <circle cx="47" cy="153" r="4" fill="#FFD23F" opacity=".8"/>
+      <circle cx="61" cy="153" r="4" fill="#FFD23F" opacity=".8"/>
+      <circle cx="54" cy="147" r="4" fill="#FFD23F" opacity=".8"/>
+      <circle cx="54" cy="161" r="4" fill="#FFD23F" opacity=".8"/>
+      <!-- Arms -->
+      <ellipse cx="34" cy="155" rx="11" ry="18" fill="#FF9EAA" transform="rotate(-12,34,155)"/>
+      <ellipse cx="126" cy="155" rx="11" ry="18" fill="#FF9EAA" transform="rotate(12,126,155)"/>
+      <!-- Hands -->
+      <circle cx="26" cy="170" r="10" fill="#FFD4A3"/>
+      <circle cx="134" cy="170" r="10" fill="#FFD4A3"/>
+      <!-- Book in hand -->
+      <rect x="14" y="163" width="20" height="14" rx="2" fill="#4FC3F7"/>
+      <line x1="24" y1="163" x2="24" y2="177" stroke="#fff" stroke-width="1.5"/>
+      <!-- Neck -->
+      <rect x="72" y="122" width="16" height="18" rx="5" fill="#FFD4A3"/>
+      <!-- Head -->
+      <circle cx="80" cy="92" r="46" fill="#FFD4A3"/>
+      <!-- Head shading -->
+      <ellipse cx="80" cy="104" rx="42" ry="22" fill="#FBBF7A" opacity=".22"/>
+      <!-- Hair back -->
+      <ellipse cx="80" cy="50" rx="42" ry="22" fill="#8B4513"/>
+      <!-- Long hair sides -->
+      <path d="M38 75 Q30 110 34 145 Q45 148 48 140 Q46 110 50 78Z" fill="#8B4513"/>
+      <path d="M122 75 Q130 110 126 145 Q115 148 112 140 Q114 110 110 78Z" fill="#8B4513"/>
+      <!-- Hair highlights -->
+      <path d="M48 50 Q60 40 72 46" fill="none" stroke="#C0783C" stroke-width="4" stroke-linecap="round" opacity=".6"/>
+      <!-- Hair bun / waves -->
+      <path d="M38 75 Q50 82 60 78 Q68 75 80 78 Q92 81 100 78 Q110 75 122 78" fill="none" stroke="#8B4513" stroke-width="8" stroke-linecap="round"/>
+      <!-- Hair clips -->
+      <rect x="42" y="72" width="14" height="6" rx="3" fill="#FF6B6B"/>
+      <rect x="104" y="72" width="14" height="6" rx="3" fill="#FFD23F"/>
+      <!-- Ears -->
+      <circle cx="34" cy="92" r="9" fill="#FFD4A3"/>
+      <circle cx="34" cy="92" r="4.5" fill="#FFB8A0"/>
+      <circle cx="126" cy="92" r="9" fill="#FFD4A3"/>
+      <circle cx="126" cy="92" r="4.5" fill="#FFB8A0"/>
+      <!-- Earrings -->
+      <circle cx="34" cy="100" r="3.5" fill="#FF6B6B"/>
+      <circle cx="126" cy="100" r="3.5" fill="#FF6B6B"/>
+      <!-- Eyes (left) -->
+      <ellipse cx="62" cy="88" rx="13" ry="15" fill="white"/>
+      <ellipse cx="63" cy="90" rx="8" ry="9" fill="#5B3A8C"/>
+      <ellipse cx="65" cy="88" rx="3.5" ry="3.5" fill="#7A55B8"/>
+      <circle cx="67" cy="86" r="3" fill="white"/>
+      <g class="c-eye"><path d="M49 84 Q62 73 75 84" fill="#8B4513"/></g>
+      <!-- Lashes left -->
+      <line x1="50" y1="84" x2="45" y2="78" stroke="#8B4513" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="56" y1="80" x2="53" y2="74" stroke="#8B4513" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="74" y1="84" x2="78" y2="78" stroke="#8B4513" stroke-width="1.8" stroke-linecap="round"/>
+      <!-- Eyes (right) -->
+      <ellipse cx="98" cy="88" rx="13" ry="15" fill="white"/>
+      <ellipse cx="99" cy="90" rx="8" ry="9" fill="#5B3A8C"/>
+      <ellipse cx="101" cy="88" rx="3.5" ry="3.5" fill="#7A55B8"/>
+      <circle cx="103" cy="86" r="3" fill="white"/>
+      <g class="c-eye"><path d="M85 84 Q98 73 111 84" fill="#8B4513"/></g>
+      <!-- Lashes right -->
+      <line x1="86" y1="84" x2="82" y2="78" stroke="#8B4513" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="110" y1="84" x2="115" y2="78" stroke="#8B4513" stroke-width="1.8" stroke-linecap="round"/>
+      <line x1="104" y1="80" x2="107" y2="74" stroke="#8B4513" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Eyebrows -->
+      <path d="M49 72 Q62 65 74 70" fill="none" stroke="#6B3A1F" stroke-width="3" stroke-linecap="round"/>
+      <path d="M86 70 Q98 65 111 72" fill="none" stroke="#6B3A1F" stroke-width="3" stroke-linecap="round"/>
+      <!-- Nose -->
+      <ellipse cx="80" cy="102" rx="4.5" ry="3" fill="#E8A880"/>
+      <!-- Cheeks -->
+      <ellipse cx="50" cy="104" rx="12" ry="8" fill="#FF9B9B" opacity=".5"/>
+      <ellipse cx="110" cy="104" rx="12" ry="8" fill="#FF9B9B" opacity=".5"/>
+      <!-- Mouth -->
+      <path class="c-mouth" d="M62 114 Q80 126 98 114" fill="none" stroke="#7C4A1E" stroke-width="2.8" stroke-linecap="round"/>
+      <path d="M67 115 Q80 124 93 115" fill="white" opacity=".75"/>
+      <!-- Star hair ornament -->
+      <text x="103" y="62" font-size="18">⭐</text>
+    </g>
+
+    <!-- ╔══════════════════════════════════╗
+         ║   MR. RAY   (남자 선생님)        ║
+         ╚══════════════════════════════════╝ -->
+    <g id="ray-full">
+      <!-- Star orbits -->
+      <g class="c-star" style="transform-origin:80px 90px">
+        <text x="136" y="40" font-size="15" opacity=".75">✨</text>
+      </g>
+      <g class="c-star-rev" style="transform-origin:80px 90px">
+        <text x="14" y="145" font-size="13" opacity=".5">⭐</text>
+      </g>
+      <!-- Shadow -->
+      <ellipse cx="80" cy="162" rx="44" ry="13" fill="#6B9FD4" opacity=".2"/>
+      <!-- Body / blazer -->
+      <path d="M40 148 Q38 168 36 185 L124 185 Q122 168 120 148 Q102 138 80 138 Q58 138 40 148Z" fill="#2D5FA6"/>
+      <!-- Shirt underneath -->
+      <path d="M68 140 Q80 148 92 140 L90 185 L70 185Z" fill="#FFFFFF"/>
+      <!-- Tie -->
+      <path d="M77 140 L83 140 L85 165 L80 170 L75 165Z" fill="#FF6B6B"/>
+      <path d="M77 140 L83 140 L80 148Z" fill="#D84040"/>
+      <!-- Lapels -->
+      <path d="M40 148 Q50 140 68 138 L68 185 L36 185Z" fill="#1E4A8A"/>
+      <path d="M120 148 Q110 140 92 138 L92 185 L124 185Z" fill="#1E4A8A"/>
+      <!-- Pocket square -->
+      <rect x="44" y="148" width="12" height="8" rx="1" fill="white" opacity=".9"/>
+      <path d="M44 148 Q50 143 56 148" fill="none" stroke="white" stroke-width="1" opacity=".9"/>
+      <!-- Arms -->
+      <ellipse cx="32" cy="155" rx="12" ry="19" fill="#2D5FA6" transform="rotate(-10,32,155)"/>
+      <ellipse cx="128" cy="155" rx="12" ry="19" fill="#2D5FA6" transform="rotate(10,128,155)"/>
+      <!-- Shirt cuffs -->
+      <ellipse cx="25" cy="170" rx="10" ry="6" fill="white"/>
+      <ellipse cx="135" cy="170" rx="10" ry="6" fill="white"/>
+      <!-- Hands -->
+      <circle cx="25" cy="174" r="11" fill="#FFD4A3"/>
+      <circle cx="135" cy="174" r="11" fill="#FFD4A3"/>
+      <!-- Papers in hand -->
+      <rect x="13" y="168" width="16" height="20" rx="2" fill="#fff" stroke="#ccc" stroke-width="1"/>
+      <line x1="16" y1="173" x2="26" y2="173" stroke="#aaa" stroke-width="1"/>
+      <line x1="16" y1="177" x2="26" y2="177" stroke="#aaa" stroke-width="1"/>
+      <line x1="16" y1="181" x2="22" y2="181" stroke="#aaa" stroke-width="1"/>
+      <!-- Neck -->
+      <rect x="72" y="122" width="16" height="18" rx="5" fill="#FFD4A3"/>
+      <!-- Head (slightly squarish) -->
+      <rect x="34" y="50" width="92" height="88" rx="36" fill="#FFD4A3"/>
+      <!-- Head shading -->
+      <ellipse cx="80" cy="108" rx="40" ry="16" fill="#FBBF7A" opacity=".2"/>
+      <!-- Short hair -->
+      <path d="M34 78 Q34 48 80 42 Q126 48 126 78 Q120 62 80 58 Q40 62 34 78Z" fill="#3D2B1F"/>
+      <!-- Side burns -->
+      <path d="M34 78 Q32 90 34 100 Q38 96 40 88Z" fill="#3D2B1F"/>
+      <path d="M126 78 Q128 90 126 100 Q122 96 120 88Z" fill="#3D2B1F"/>
+      <!-- Ears -->
+      <circle cx="34" cy="94" r="9" fill="#FFD4A3"/>
+      <circle cx="34" cy="94" r="4.5" fill="#FFB8A0"/>
+      <circle cx="126" cy="94" r="9" fill="#FFD4A3"/>
+      <circle cx="126" cy="94" r="4.5" fill="#FFB8A0"/>
+      <!-- Glasses frame -->
+      <rect x="46" y="82" width="26" height="18" rx="6" fill="none" stroke="#3D2B1F" stroke-width="2.5"/>
+      <rect x="88" y="82" width="26" height="18" rx="6" fill="none" stroke="#3D2B1F" stroke-width="2.5"/>
+      <!-- Glasses bridge -->
+      <line x1="72" y1="90" x2="88" y2="90" stroke="#3D2B1F" stroke-width="2.5"/>
+      <!-- Glasses arms -->
+      <line x1="46" y1="90" x2="34" y2="90" stroke="#3D2B1F" stroke-width="2"/>
+      <line x1="114" y1="90" x2="126" y2="90" stroke="#3D2B1F" stroke-width="2"/>
+      <!-- Glasses lens tint -->
+      <rect x="47" y="83" width="24" height="16" rx="5" fill="#A8D8F0" opacity=".3"/>
+      <rect x="89" y="83" width="24" height="16" rx="5" fill="#A8D8F0" opacity=".3"/>
+      <!-- Eyes (left) -->
+      <ellipse cx="59" cy="91" rx="9" ry="10" fill="white"/>
+      <ellipse cx="60" cy="92" rx="6" ry="6.5" fill="#3D2B1F"/>
+      <ellipse cx="62" cy="90" rx="2.5" ry="2.5" fill="#5B3A28"/>
+      <circle cx="64" cy="88" r="2.5" fill="white"/>
+      <g class="c-eye"><path d="M50 87 Q59 80 68 87" fill="#3D2B1F"/></g>
+      <!-- Eyes (right) -->
+      <ellipse cx="101" cy="91" rx="9" ry="10" fill="white"/>
+      <ellipse cx="102" cy="92" rx="6" ry="6.5" fill="#3D2B1F"/>
+      <ellipse cx="104" cy="90" rx="2.5" ry="2.5" fill="#5B3A28"/>
+      <circle cx="106" cy="88" r="2.5" fill="white"/>
+      <g class="c-eye"><path d="M92 87 Q101 80 110 87" fill="#3D2B1F"/></g>
+      <!-- Eyebrows -->
+      <path d="M50 78 Q59 73 68 77" fill="none" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
+      <path d="M92 77 Q101 73 110 78" fill="none" stroke="#3D2B1F" stroke-width="3" stroke-linecap="round"/>
+      <!-- Nose -->
+      <ellipse cx="80" cy="104" rx="5" ry="4" fill="#E8A880"/>
+      <path d="M75 106 Q80 109 85 106" fill="none" stroke="#D4936E" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Cheeks -->
+      <ellipse cx="50" cy="108" rx="11" ry="7" fill="#FF9B9B" opacity=".35"/>
+      <ellipse cx="110" cy="108" rx="11" ry="7" fill="#FF9B9B" opacity=".35"/>
+      <!-- Mouth -->
+      <path class="c-mouth" d="M62 118 Q80 130 98 118" fill="none" stroke="#7C4A1E" stroke-width="2.8" stroke-linecap="round"/>
+      <path d="M67 119 Q80 127 93 119" fill="white" opacity=".7"/>
+      <!-- Name tag / badge -->
+      <rect x="94" y="148" width="24" height="14" rx="3" fill="#FFD23F"/>
+      <text x="106" y="159" font-size="7" text-anchor="middle" fill="#2D1B69" font-weight="900">RAY</text>
+    </g>
+
+  </defs>
+</svg>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 0 — TUTOR SELECT
+════════════════════════════════════════════════════ -->
+<div id="screen-tutor" class="screen active bg-neutral">
+  <div class="phone-frame z1 flex col ai-c jc-c" style="min-height:100vh;padding:40px 24px">
+
+    <h1 style="font-size:40px;color:var(--purple);margin-bottom:6px">Sunny Talk</h1>
+    <p class="fs14 fw7 col-m mb12 tc">AI 영어 튜터를 선택하세요 🌟</p>
+
+    <!-- Two tutor cards -->
+    <div class="flex gap12 w100 mb24" style="max-width:380px">
+
+      <!-- Ms. Lily -->
+      <div id="select-lily" class="tutor-select-card flex col ai-c tc" onclick="selectTutor('lily')"
+           style="flex:1;background:rgba(255,255,255,.88);border-radius:var(--r);padding:20px 12px;cursor:pointer;border:3px solid transparent;transition:all .2s ease;box-shadow:var(--shadow-sm);backdrop-filter:blur(12px)">
+        <svg width="130" height="148" viewBox="0 0 160 195" style="overflow:visible">
+          <g class="c-body"><use href="#lily-full"/></g>
+        </svg>
+        <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--purple);margin-top:8px">Ms. Lily</div>
+        <div class="fs12 fw7 col-m mt8">여자 선생님</div>
+        <div class="badge b-demo mt8" style="font-size:10px">친절하고 밝은</div>
+      </div>
+
+      <!-- Mr. Ray -->
+      <div id="select-ray" class="tutor-select-card flex col ai-c tc" onclick="selectTutor('ray')"
+           style="flex:1;background:rgba(255,255,255,.88);border-radius:var(--r);padding:20px 12px;cursor:pointer;border:3px solid transparent;transition:all .2s ease;box-shadow:var(--shadow-sm);backdrop-filter:blur(12px)">
+        <svg width="130" height="148" viewBox="0 0 160 195" style="overflow:visible">
+          <g class="c-body"><use href="#ray-full"/></g>
+        </svg>
+        <div style="font-family:'Fredoka One',cursive;font-size:20px;color:var(--purple);margin-top:8px">Mr. Ray</div>
+        <div class="fs12 fw7 col-m mt8">남자 선생님</div>
+        <div class="badge b-demo mt8" style="font-size:10px">재미있고 열정적</div>
+      </div>
+    </div>
+
+    <p class="fs12 col-m fw7">나중에 수업 중에도 바꿀 수 있어요!</p>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 1 — LOGIN
+════════════════════════════════════════════════════ -->
+<div id="screen-login" class="screen">
+  <div class="phone-frame z1 flex col ai-c" style="min-height:100vh;padding:36px 24px 0;justify-content:center">
+
+    <!-- Mini tutor + greeting -->
+    <div class="flex col ai-c mb16" id="login-tutor-wrap">
+      <div style="position:relative">
+        <svg id="login-char" width="140" height="158" viewBox="0 0 160 195" style="overflow:visible;filter:drop-shadow(0 10px 22px rgba(45,27,105,.22))">
+          <g class="c-body"><use id="login-char-use" href="#lily-full"/></g>
+        </svg>
+        <!-- Speech bubble -->
+        <div id="login-bubble"
+             style="position:absolute;top:-16px;right:-60px;background:var(--purple);color:#fff;border-radius:16px;border-bottom-left-radius:4px;padding:9px 14px;font-size:13px;font-weight:800;white-space:nowrap;box-shadow:var(--shadow-sm)">
+          안녕! 나야 😊
+        </div>
+      </div>
+    </div>
+
+    <h1 style="font-size:32px;color:var(--purple)">Sunny Talk</h1>
+    <div id="conn-status" class="badge b-wait mt8 mb16">⏳ 서버 확인 중...</div>
+
+    <!-- Student list -->
+    <div id="student-select-area" class="w100" style="max-width:320px">
+      <p class="fs12 fw9 col-m mb8 tc">내 이름을 선택하세요</p>
+      <div id="student-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px"></div>
+    </div>
+
+    <!-- PIN area -->
+    <div id="pin-area" style="display:none;flex-direction:column;align-items:center">
+      <p class="fs13 fw8 col-m mb4" id="pin-name-label"></p>
+      <div class="pin-dots">
+        <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+      </div>
+      <div class="numpad">
+        <button class="nk" onclick="pi('1')">1</button><button class="nk" onclick="pi('2')">2</button><button class="nk" onclick="pi('3')">3</button>
+        <button class="nk" onclick="pi('4')">4</button><button class="nk" onclick="pi('5')">5</button><button class="nk" onclick="pi('6')">6</button>
+        <button class="nk" onclick="pi('7')">7</button><button class="nk" onclick="pi('8')">8</button><button class="nk" onclick="pi('9')">9</button>
+        <button class="nk del" onclick="clearStu()" style="font-size:11px">↩변경</button>
+        <button class="nk" onclick="pi('0')">0</button>
+        <button class="nk del" onclick="pd()">⌫</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px;margin-bottom:16px">
+      <button onclick="goTutorSelect()" class="btn btn-ghost fs12" style="padding:10px 16px">튜터 변경</button>
+      <button onclick="goAdmin()" class="btn btn-ghost fs12" style="padding:10px 16px">관리자 설정</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 2 — LESSON SELECT
+════════════════════════════════════════════════════ -->
+<div id="screen-lessons" class="screen">
+  <div class="phone-frame z1 w100" style="min-height:100vh;padding-bottom:24px">
+
+    <!-- Header -->
+    <div style="padding:20px 18px 14px;background:rgba(255,255,255,.92);box-shadow:0 2px 12px rgba(45,27,105,.08);backdrop-filter:blur(12px)">
+      <div class="flex ai-c gap8 mb10">
+        <button onclick="goTo('screen-login')" class="btn btn-ghost" style="width:34px;height:34px;padding:0;border-radius:50%;font-size:15px;flex-shrink:0">←</button>
+        <div style="flex:1">
+          <p class="fs11 fw7 col-m">안녕하세요,</p>
+          <h2 style="font-size:20px;color:var(--purple)" id="lessons-stu-name">학생</h2>
+        </div>
+        <!-- Mini tutor toggle -->
+        <div style="cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px" onclick="goTutorSelect()">
+          <svg id="lessons-mini-char" width="48" height="54" viewBox="0 0 160 195" style="overflow:visible">
+            <g class="c-body" style="animation-duration:4.5s"><use id="lessons-char-use" href="#lily-full"/></g>
+          </svg>
+          <span class="fs9 col-m fw8" style="font-size:9px">튜터 변경</span>
+        </div>
+      </div>
+      <!-- Progress -->
+      <div style="background:var(--purple-pale);border-radius:var(--r-xs);padding:10px 13px;display:flex;ai-c:center;gap:10px;align-items:center">
+        <span style="font-size:18px">🔥</span>
+        <div>
+          <p class="fw8 fs12" style="color:var(--purple)">오늘의 목표</p>
+          <p class="fs11 col-m fw7">레슨 1개 완료 → 별 3개!</p>
+        </div>
+        <div style="margin-left:auto;font-family:'Fredoka One',cursive;font-size:20px;color:var(--yellow-d)" id="streak-count">0🔥</div>
+      </div>
+    </div>
+
+    <div style="padding:14px 16px 0">
+      <h2 style="font-size:19px;color:var(--text);margin-bottom:3px">레슨 선택</h2>
+      <p class="fs12 col-m fw7 mb14">오늘 배울 레슨을 골라보세요!</p>
+    </div>
+    <div class="lesson-grid" id="lesson-grid"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 3 — CONVERSATION  (reference layout)
+════════════════════════════════════════════════════ -->
+<div id="screen-convo" class="screen">
+  <div class="phone-frame z1 w100" style="height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden">
+
+    <!-- ── Background gradient (changes per tutor) ── -->
+    <div id="convo-bg" style="position:absolute;inset:0;background:linear-gradient(160deg,#A8EDEA,#FED6E3);z-index:0;transition:background .5s ease"></div>
+
+    <!-- ── Large tutor character (bottom center) ── -->
+    <div id="tutor-stage" style="position:absolute;bottom:110px;left:50%;transform:translateX(-50%);z-index:1;pointer-events:none">
+      <svg id="convo-char-svg" width="220" height="248" viewBox="0 0 160 195"
+           style="overflow:visible;filter:drop-shadow(0 16px 32px rgba(45,27,105,.28))">
+        <g class="c-body"><use id="convo-char-use" href="#lily-full"/></g>
+      </svg>
+    </div>
+
+    <!-- ── Browser-style top bar ── -->
+    <div style="position:relative;z-index:10;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);padding:10px 14px 8px;border-bottom:1px solid rgba(45,27,105,.08)">
+      <!-- Nav tabs -->
+      <nav style="display:flex;justify-content:space-around;font-size:12px;font-weight:800;color:var(--purple)">
+        <span style="padding-bottom:4px;border-bottom:2.5px solid var(--purple)">Home</span>
+        <span class="col-m" onclick="goTo('screen-lessons')">Classes</span>
+        <span class="col-m">Goals</span>
+        <span class="col-m">History</span>
+      </nav>
+    </div>
+
+    <!-- ── Top: lesson info + timer ── -->
+    <div style="position:relative;z-index:5;display:flex;align-items:center;padding:8px 14px;gap:8px">
+      <button onclick="confirmEnd()" class="btn btn-ghost" style="width:32px;height:32px;padding:0;border-radius:50%;font-size:14px;flex-shrink:0">✕</button>
+      <div id="convo-title" style="font-weight:800;font-size:13px;color:var(--purple);flex:1"></div>
+      <div id="sess-status" class="badge b-wait">⏳ 연결 중</div>
+    </div>
+
+    <!-- Timer bar -->
+    <div style="position:relative;z-index:5;height:5px;background:rgba(255,255,255,.4)">
+      <div id="timer-bar" style="height:100%;background:var(--yellow);transition:width 1s linear;width:100%"></div>
+    </div>
+
+    <!-- Vocab strip (scrollable, floating) -->
+    <div class="vstrip" id="vocab-strip" style="position:relative;z-index:5;background:rgba(255,255,255,.25)"></div>
+
+    <!-- ── RIGHT WIDGETS ── -->
+    <div style="position:absolute;top:130px;right:12px;width:95px;z-index:8;display:flex;flex-direction:column;gap:10px">
+      <!-- Goals card -->
+      <div class="glass" style="padding:10px">
+        <div class="fs10 fw9 col-m mb6" style="font-size:10px">Daily Goals</div>
+        <button onclick="showHint()" style="width:100%;padding:5px;background:#2ecc71;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer;margin-bottom:4px">💡 힌트</button>
+        <button onclick="skipTurn()" style="width:100%;padding:5px;background:var(--yellow);color:var(--purple);border:none;border-radius:8px;font-size:11px;font-weight:800;cursor:pointer">⏭ 스킵</button>
+      </div>
+      <!-- Timer card -->
+      <div class="glass" style="padding:10px;text-align:center">
+        <div class="fs10 fw9 col-m mb4" style="font-size:10px">Speaking Time</div>
+        <div id="timer-display" style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--coral)">10:00</div>
+      </div>
+      <!-- Tutor switch -->
+      <div class="glass" style="padding:8px;text-align:center;cursor:pointer" onclick="goTutorSelect()">
+        <div class="fs10 fw9 col-m" style="font-size:10px;margin-bottom:4px">튜터 변경</div>
+        <svg id="convo-mini-char" width="52" height="58" viewBox="0 0 160 195" style="overflow:visible">
+          <g class="c-body" style="animation-duration:5s"><use id="convo-mini-use" href="#lily-full"/></g>
+        </svg>
+        <div id="tutor-name-badge" style="font-size:10px;font-weight:800;color:var(--purple);margin-top:3px">Ms. Lily</div>
+      </div>
+    </div>
+
+    <!-- ── LEFT WIDGETS ── -->
+    <div style="position:absolute;top:130px;left:12px;width:85px;z-index:8;display:flex;flex-direction:column;gap:10px">
+      <!-- Student card -->
+      <div class="glass" style="padding:10px;text-align:center">
+        <div class="fs10 fw9 col-m mb4" style="font-size:10px">Student</div>
+        <div id="convo-stu-name" style="font-weight:900;font-size:12px;color:var(--purple)">학생</div>
+        <div id="convo-turn-count" style="font-size:10px;color:var(--muted);margin-top:3px;font-weight:700">0 turns</div>
+      </div>
+      <!-- Vocab count -->
+      <div class="glass" style="padding:10px;text-align:center">
+        <div class="fs10 fw9 col-m mb2" style="font-size:10px">단어</div>
+        <div id="vocab-progress" style="font-family:'Fredoka One',cursive;font-size:22px;color:var(--teal)">0/5</div>
+      </div>
+    </div>
+
+    <!-- ── CHAT AREA (floating, scrollable) ── -->
+    <div id="chat-area"
+         style="position:absolute;top:200px;left:108px;right:116px;bottom:155px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 4px 8px;z-index:6;scrollbar-width:none">
+    </div>
+
+    <!-- ── BOTTOM: Speak button ── -->
+    <div style="position:absolute;bottom:0;left:0;right:0;z-index:9;padding:12px 20px 28px;display:flex;flex-direction:column;align-items:center;gap:8px;background:linear-gradient(to top,rgba(255,255,255,.55) 0%,transparent 100%);backdrop-filter:blur(4px)">
+      <button class="speak-btn" id="speak-btn" onclick="toggleMic()" disabled>
+        <span id="mic-icon">🎤</span>
+        <span id="mic-txt">Speak</span>
+      </button>
+      <div id="mic-label" class="fs11 fw8" style="color:rgba(45,27,105,.6)">서버에 연결 중입니다...</div>
+      <!-- Phone-style home nav -->
+      <div style="display:flex;justify-content:space-around;width:100%;color:rgba(45,27,105,.4);font-size:18px;margin-top:2px">
+        <span>←</span><span>🏠</span><span>▤</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 4 — COMPLETE
+════════════════════════════════════════════════════ -->
+<div id="screen-complete" class="screen">
+  <div class="phone-frame z1 flex col ai-c tc" style="min-height:100vh;padding:36px 20px;justify-content:center">
+
+    <div style="position:relative;display:inline-block;margin-bottom:16px">
+      <div style="font-size:44px;position:absolute;top:-18px;left:-20px;animation:sPop .5s ease forwards">🎉</div>
+      <div style="font-size:32px;position:absolute;top:-8px;right:-18px;animation:sPop .5s .18s ease both">🌟</div>
+      <svg id="complete-char" width="140" height="158" viewBox="0 0 160 195"
+           style="overflow:visible;filter:drop-shadow(0 12px 24px rgba(45,27,105,.2))">
+        <g class="c-body celebrate"><use id="complete-char-use" href="#lily-full"/></g>
+      </svg>
+    </div>
+
+    <h1 style="font-size:32px;color:var(--purple)">완료! 🎊</h1>
+    <p class="fw8 fs13 col-m mt6 mb14" id="cmp-lesson-name">레슨을 마쳤어요!</p>
+
+    <div class="flex gap8 mb14" style="font-size:34px;justify-content:center">
+      <span class="star-pop">⭐</span><span class="star-pop">⭐</span><span class="star-pop">⭐</span>
+    </div>
+
+    <div class="rchips mb20 w100" style="max-width:320px">
+      <div class="rchip"><div class="val" id="r-turns">0</div><div class="lbl">대화 횟수</div></div>
+      <div class="rchip"><div class="val" id="r-words">0</div><div class="lbl">연습 단어</div></div>
+      <div class="rchip"><div class="val" id="r-time">0분</div><div class="lbl">대화 시간</div></div>
+      <div class="rchip"><div class="val" id="r-streak">🔥1</div><div class="lbl">연속 학습</div></div>
+    </div>
+
+    <!-- Vocab review -->
+    <div class="card w100 mb14" style="max-width:360px;text-align:left">
+      <h3 style="font-size:15px;color:var(--purple);margin-bottom:10px">오늘 배운 단어 📚</h3>
+      <div id="cmp-vocab" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <!-- Tutor feedback -->
+    <div class="card w100 mb20" style="max-width:360px;text-align:left;background:var(--purple-pale)">
+      <div class="flex ai-c gap8 mb8">
+        <svg width="36" height="40" viewBox="0 0 160 195" style="overflow:visible;flex-shrink:0">
+          <g><use id="cmp-tutor-icon" href="#lily-full"/></g>
+        </svg>
+        <div style="font-weight:800;font-size:14px;color:var(--purple)" id="cmp-tutor-name">Ms. Lily의 한마디</div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);font-weight:700;line-height:1.6" id="cmp-feedback">정말 잘했어요!</p>
+    </div>
+
+    <div class="flex gap8 w100" style="max-width:320px">
+      <button onclick="goTo('screen-lessons')" class="btn btn-ghost" style="flex:1;padding:12px">다른 레슨</button>
+      <button onclick="repeatLesson()" class="btn btn-purple" style="flex:1;padding:12px">다시 연습</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN 5 — ADMIN
+════════════════════════════════════════════════════ -->
+<div id="screen-admin" class="screen bg-neutral">
+  <div class="phone-frame z1 w100" style="padding:22px 18px 40px;min-height:100vh">
+    <div class="flex ai-c gap8 mb20">
+      <button onclick="goTo('screen-login')" class="btn btn-ghost" style="width:34px;height:34px;padding:0;border-radius:50%;font-size:14px">←</button>
+      <h2 style="font-size:22px;color:var(--purple)">관리자 설정</h2>
+    </div>
+
+    <div class="asec">
+      <h3>🔐 서버 연결 (Firebase Functions)</h3>
+      <div class="card" style="padding:16px">
+        <p class="fs12 col-m fw7 mb6">Functions URL <span id="url-ok" style="color:var(--green);font-size:11px;font-weight:900"></span></p>
+        <input type="url" class="ifield mb8" id="f-url" placeholder="https://asia-northeast1-PROJECT.cloudfunctions.net/getRealtimeToken">
+        <p class="fs12 col-m fw7 mb6">앱 식별 Secret</p>
+        <input type="password" class="ifield mb8" id="f-secret" placeholder="APP_SECRET 값">
+        <p class="fs11 col-m fw7 mb10">✅ API Key는 서버에만 있습니다. 이 앱엔 URL만 저장됩니다.</p>
+        <div class="flex gap8">
+          <button onclick="saveFConf()" class="btn btn-purple" style="flex:1;padding:11px;font-size:14px">저장</button>
+          <button onclick="testF()" class="btn btn-ghost" style="flex:1;padding:11px;font-size:14px">테스트</button>
+        </div>
+        <div id="test-res" class="fs12 fw8 mt8"></div>
+      </div>
+    </div>
+
+    <div class="asec">
+      <h3>⚙️ 모델 · 세션 설정</h3>
+      <div class="card" style="padding:16px">
+        <p class="fs12 col-m fw7 mb6">Realtime 모델</p>
+        <select class="ifield mb10" id="m-select">
+          <option value="gpt-4o-mini-realtime-preview-2024-12-17">gpt-4o-mini-realtime (절약형 ★추천)</option>
+          <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime (고품질)</option>
+        </select>
+        <p class="fs12 col-m fw7 mb6">세션 시간</p>
+        <select class="ifield mb10" id="sl-select">
+          <option value="600">10분 (초등)</option>
+          <option value="900">15분 (중등)</option>
+          <option value="300">5분 (체험)</option>
+        </select>
+        <button onclick="saveModel()" class="btn btn-purple w100" style="padding:11px;font-size:14px">저장</button>
+      </div>
+    </div>
+
+    <div class="asec">
+      <h3>👤 학생 관리</h3>
+      <div class="card" style="padding:16px">
+        <div class="flex gap8 mb10">
+          <input type="text" class="ifield" id="ns-name" placeholder="학생 이름">
+          <input type="text" class="ifield" id="ns-pin" placeholder="PIN 4자리" maxlength="4" style="width:110px;flex-shrink:0">
+        </div>
+        <button onclick="addStu()" class="btn btn-purple w100" style="padding:11px;font-size:14px">+ 학생 추가</button>
+      </div>
+      <div id="stu-list-admin" class="mt8"></div>
+    </div>
+
+    <div class="asec">
+      <h3>📊 최근 세션</h3>
+      <div id="sess-log"></div>
+    </div>
+
+    <div class="asec">
+      <h3>📚 레슨 목록</h3>
+      <div id="lesson-preview"></div>
+    </div>
+
+    <div class="asec">
+      <h3>🚀 배포 가이드</h3>
+      <div class="card" style="background:var(--purple);padding:16px">
+        <pre style="font-size:12px;color:#fff;white-space:pre-wrap;line-height:2;font-family:'Nunito',sans-serif;font-weight:700">1. firebase login
+2. firebase use YOUR_PROJECT_ID
+3. cd functions && npm install
+4. firebase functions:secrets:set OPENAI_API_KEY
+5. firebase functions:secrets:set APP_SECRET
+6. firebase deploy --only functions
+7. Functions URL → 이 화면에 입력
+8. APP_SECRET → 이 화면에 입력 후 저장</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════ -->
+<script>
+// ── State ──────────────────────────────────────────
+const S = {
+  tutor: 'lily',            // 'lily' | 'ray'
+  student: null,
+  lesson: null,
+  pin: '',
+  startTime: null,
+  turns: 0,
+  secs: 0,
+  duration: 600,
+  timerInt: null,
+  pc: null,                 // RTCPeerConnection
+  dc: null,                 // DataChannel
+  audio: null,
+  listening: false,
+  speaking: false,
+  streak: 0,
+  demo: false,
+  demoIdx: 0,
+  vocabUsed: 0,
+};
+
+// Tutor config
+const TUTORS = {
+  lily: {
+    id: 'lily-full', name: 'Ms. Lily', nameBadge: 'Ms. Lily',
+    bg: 'linear-gradient(160deg,#A8EDEA 0%,#FED6E3 50%,#ffecd2 100%)',
+    bubbleCls: 'bg-female',
+    greeting: '안녕! 나는 Lily 선생님이야 😊<br>영어로 대화해보자!',
+    voice: 'shimmer',
+  },
+  ray: {
+    id: 'ray-full', name: 'Mr. Ray', nameBadge: 'Mr. Ray',
+    bg: 'linear-gradient(160deg,#C2E9FB 0%,#A1C4FD 50%,#d4e8fb 100%)',
+    bubbleCls: 'bg-male',
+    greeting: '안녕! 나는 Ray 선생님이야 😎<br>같이 영어 공부해보자!',
+    voice: 'echo',
+  },
+};
+
+// ── Lessons ─────────────────────────────────────────
+const LESSONS = [
+  {id:'L01',day:1,icon:'👋',title:'Greetings',titleKo:'인사와 자기소개',level:'beginner',
+   vocab:[{en:'hello',ko:'안녕하세요',ex:'Hello! My name is Sunny.'},{en:'nice',ko:'좋은',ex:'Nice to meet you!'},{en:'my name',ko:'내 이름',ex:'My name is Minseo.'},{en:'how are you',ko:'잘 지내나요?',ex:'How are you today?'},{en:'fine',ko:'괜찮아요',ex:"I'm fine, thank you!"}],
+   expressions:[{phrase:'Nice to meet you!',ko:'만나서 반가워요!'},{phrase:'How are you?',ko:'잘 지내요?'},{phrase:"I'm doing great!",ko:'저는 정말 잘 지내요!'}],
+   grammar:{point:'I am + 형용사',example:'I am happy / I am fine'},
+   prompt:`You are a friendly English tutor for Korean elementary students. Today's lesson: Greetings & Introductions. Vocab: hello, nice, my name, how are you, fine. Keep ALL responses to 1-2 short sentences. Encourage warmly. If stuck, give a hint. Occasionally say 잘했어요!`},
+  {id:'L02',day:2,icon:'👨‍👩‍👧',title:'My Family',titleKo:'우리 가족',level:'beginner',
+   vocab:[{en:'mother',ko:'어머니',ex:'My mother is kind.'},{en:'father',ko:'아버지',ex:'My father is tall.'},{en:'brother',ko:'남자 형제',ex:'I have one brother.'},{en:'sister',ko:'여자 형제',ex:'My sister is funny.'},{en:'family',ko:'가족',ex:'I love my family!'}],
+   expressions:[{phrase:'I have a brother.',ko:'저는 남자 형제가 있어요.'},{phrase:'My mother is very kind.',ko:'우리 엄마는 정말 친절해요.'},{phrase:'We are a happy family.',ko:'우리는 행복한 가족이에요.'}],
+   grammar:{point:'have/has',example:'I have a sister. / She has a brother.'},
+   prompt:`You are a fun English tutor. Today: My Family. Vocab: mother, father, brother, sister, family. 1-2 sentences per response. Ask about their family. Model grammar naturally.`},
+  {id:'L03',day:3,icon:'🍕',title:'Food I Love',titleKo:'좋아하는 음식',level:'beginner',
+   vocab:[{en:'favorite',ko:'가장 좋아하는',ex:'My favorite food is pizza.'},{en:'delicious',ko:'맛있는',ex:'This is so delicious!'},{en:'hungry',ko:'배고픈',ex:'I am hungry.'},{en:'eat',ko:'먹다',ex:'I eat rice every day.'},{en:'drink',ko:'마시다',ex:'I drink milk.'}],
+   expressions:[{phrase:'My favorite food is ___.',ko:'제가 가장 좋아하는 음식은 ___.'},{phrase:'I love eating ___!',ko:'___을 먹는 걸 좋아해요!'},{phrase:'It tastes so good!',ko:'정말 맛있어요!'}],
+   grammar:{point:'like/love + -ing',example:'I like eating pizza. / I love drinking juice.'},
+   prompt:`You are an enthusiastic English tutor. Today: Food I Love. Vocab: favorite, delicious, hungry, eat, drink. Be playful — pretend to taste foods together! Short responses.`},
+  {id:'L04',day:4,icon:'🏫',title:'School Life',titleKo:'학교 생활',level:'intermediate',
+   vocab:[{en:'subject',ko:'과목',ex:'My favorite subject is English.'},{en:'teacher',ko:'선생님',ex:'My teacher is very nice.'},{en:'study',ko:'공부하다',ex:'I study every evening.'},{en:'homework',ko:'숙제',ex:'I have homework today.'},{en:'friend',ko:'친구',ex:'My best friend is fun.'}],
+   expressions:[{phrase:'My favorite subject is ___.',ko:'제가 좋아하는 과목은 ___.'},{phrase:"I go to school at ___ o'clock.",ko:'저는 ___시에 학교에 가요.'},{phrase:'School is fun!',ko:'학교는 재미있어요!'}],
+   grammar:{point:'단순 현재 시제',example:'I go to school. / I study English.'},
+   prompt:`You are an encouraging tutor. Today: School Life. Vocab: subject, teacher, study, homework, friend. Simple present tense. Ask about their school day. Short responses.`},
+  {id:'L05',day:5,icon:'🌅',title:'Daily Routine',titleKo:'나의 하루',level:'intermediate',
+   vocab:[{en:'wake up',ko:'일어나다',ex:"I wake up at 7."},{en:'breakfast',ko:'아침 식사',ex:'I eat breakfast.'},{en:'go to bed',ko:'자다',ex:'I go to bed at 10.'},{en:'always',ko:'항상',ex:'I always brush my teeth.'},{en:'usually',ko:'보통',ex:'I usually walk to school.'}],
+   expressions:[{phrase:"I wake up at ___ o'clock.",ko:'저는 ___시에 일어나요.'},{phrase:'First I ___, then I ___.',ko:'먼저 ___하고, 그 다음에 ___.'},{phrase:'I always / usually ___.',ko:'저는 항상/보통 ___해요.'}],
+   grammar:{point:'빈도 부사',example:'I always eat breakfast. / I usually study.'},
+   prompt:`You are a friendly tutor. Today: Daily Routine. Vocab: wake up, breakfast, go to bed, always, usually. Talk through a typical day. Short responses.`},
+  {id:'L06',day:6,icon:'🏃',title:'Sports & Hobbies',titleKo:'스포츠와 취미',level:'intermediate',
+   vocab:[{en:'hobby',ko:'취미',ex:'My hobby is drawing.'},{en:'play',ko:'하다/놀다',ex:'I play soccer.'},{en:'good at',ko:'잘하다',ex:'I am good at swimming.'},{en:'practice',ko:'연습하다',ex:'I practice piano.'},{en:'team',ko:'팀',ex:"I'm on the school team."}],
+   expressions:[{phrase:'My hobby is ___ing.',ko:'제 취미는 ___이에요.'},{phrase:'I am good at ___.',ko:'저는 ___를 잘해요.'},{phrase:'I play ___ with ___.',ko:'___와 함께 ___을 해요.'}],
+   grammar:{point:'be good at + -ing',example:'I am good at playing piano.'},
+   prompt:`You are an energetic tutor. Today: Sports & Hobbies. Vocab: hobby, play, good at, practice, team. Chat about hobbies enthusiastically. Short responses.`},
+];
+
+// ── Storage ──────────────────────────────────────────
+const LS={
+  g:(k)=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  s:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),
+  students:()=>LS.g('st_stu')||[],
+  saveStu:(a)=>LS.s('st_stu',a),
+  sessions:()=>LS.g('st_sess')||[],
+  saveSess:(a)=>LS.s('st_sess',a),
+  settings:()=>LS.g('st_set')||{},
+  saveSets:(o)=>LS.s('st_set',{...LS.settings(),...o}),
+  done:(sid)=>LS.g('st_d_'+sid)||[],
+  addDone:(sid,lid)=>{const a=LS.done(sid);if(!a.includes(lid)){a.push(lid);LS.s('st_d_'+sid,a)}},
+};
+
+// ── Toast ─────────────────────────────────────────────
+function toast(msg,dur=2400){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur)}
+
+// ── Navigation ────────────────────────────────────────
+function goTo(id){
+  document.querySelectorAll('.screen.active').forEach(s=>{
+    if(s.id!==id){s.classList.add('out');setTimeout(()=>s.classList.remove('active','out'),260)}
+  });
+  setTimeout(()=>document.getElementById(id).classList.add('active'),100);
+}
+function goAdmin(){renderAdmin();goTo('screen-admin')}
+function goTutorSelect(){goTo('screen-tutor')}
+
+// ── Tutor select ──────────────────────────────────────
+function selectTutor(t){
+  S.tutor=t;
+  // Highlight selected
+  document.querySelectorAll('.tutor-select-card').forEach(c=>{
+    c.style.borderColor='transparent';c.style.boxShadow='var(--shadow-sm)';
+  });
+  const sel=document.getElementById('select-'+t);
+  sel.style.borderColor=t==='lily'?'#FF9EAA':'#4A90E2';
+  sel.style.boxShadow='0 8px 28px rgba(45,27,105,.2)';
+  updateTutorRefs();
+  setTimeout(()=>goTo('screen-login'),320);
+}
+
+function updateTutorRefs(){
+  const T=TUTORS[S.tutor];
+  const ref='#'+T.id;
+  // Update all <use> elements
+  ['login-char-use','lessons-char-use','convo-char-use','convo-mini-use','complete-char-use','cmp-tutor-icon'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.setAttribute('href',ref);
+  });
+  // Convo bg
+  const bg=document.getElementById('convo-bg');
+  if(bg) bg.style.background=T.bg;
+  // Tutor name badge
+  const nb=document.getElementById('tutor-name-badge');
+  if(nb) nb.textContent=T.nameBadge;
+  // Login bubble
+  const lb=document.getElementById('login-bubble');
+  if(lb) lb.innerHTML=T.greeting;
+  // Complete tutor name
+  const ct=document.getElementById('cmp-tutor-name');
+  if(ct) ct.textContent=T.name+'의 한마디 💬';
+  // Screen backgrounds
+  document.getElementById('screen-login').className='screen '+(S.tutor==='lily'?'bg-female':'bg-male');
+  document.getElementById('screen-lessons').className='screen '+(S.tutor==='lily'?'bg-female':'bg-male');
+  document.getElementById('screen-complete').className='screen '+(S.tutor==='lily'?'bg-female':'bg-male');
+}
+
+// ── Login ─────────────────────────────────────────────
+function renderStudentList(){
+  const stus=LS.students();
+  const el=document.getElementById('student-list');
+  if(!stus.length){el.innerHTML='<p style="font-size:13px;color:var(--muted);font-weight:700">관리자에서 학생을 추가해주세요</p>';return}
+  el.innerHTML=stus.map(s=>`<button onclick="selectStu('${s.id}')" class="btn btn-ghost" style="font-size:14px;padding:9px 18px">${s.name}</button>`).join('');
+}
+function selectStu(id){
+  S.student=LS.students().find(s=>s.id===id);
+  if(!S.student)return;
+  document.getElementById('pin-name-label').textContent=`${S.student.name}의 PIN을 입력하세요`;
+  document.getElementById('student-select-area').style.display='none';
+  document.getElementById('pin-area').style.display='flex';
+  S.pin='';updateDots();
+}
+function clearStu(){document.getElementById('student-select-area').style.display='';document.getElementById('pin-area').style.display='none';S.pin=''}
+function pi(d){if(S.pin.length>=4)return;S.pin+=d;updateDots();if(S.pin.length===4)setTimeout(checkPin,140)}
+function pd(){S.pin=S.pin.slice(0,-1);updateDots()}
+function updateDots(){for(let i=0;i<4;i++)document.getElementById('d'+i).classList.toggle('filled',i<S.pin.length)}
+function checkPin(){
+  if(S.pin===S.student.pin){S.streak=LS.sessions().filter(s=>s.studentId===S.student.id).length;goToLessons()}
+  else{toast('PIN이 맞지 않아요 😅');S.pin='';updateDots()}
+}
+
+// ── Lessons ───────────────────────────────────────────
+function goToLessons(){
+  document.getElementById('lessons-stu-name').textContent=S.student.name+' ✨';
+  document.getElementById('streak-count').textContent=S.streak+'🔥';
+  renderLessons();goTo('screen-lessons');
+}
+function renderLessons(){
+  const done=LS.done(S.student.id);
+  const todayI=done.length%LESSONS.length;
+  document.getElementById('lesson-grid').innerHTML=LESSONS.map((l,i)=>{
+    const isDone=done.includes(l.id);const isToday=i===todayI;
+    const lv=l.level==='beginner'?['lv-b','초급']:l.level==='intermediate'?['lv-i','중급']:['lv-a','고급'];
+    return`<div class="lcard ${isToday?'today':''} ${isDone?'done':''}" onclick="startLesson('${l.id}')">
+      <span class="licon">${l.icon}</span>
+      <div class="ltitle">${l.title}</div>
+      <div class="lsub">${l.titleKo}</div>
+      <div class="llevel ${lv[0]}">${lv[1]}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Start Lesson ──────────────────────────────────────
+function startLesson(lid){
+  S.lesson=LESSONS.find(l=>l.id===lid);if(!S.lesson)return;
+  const set=LS.settings();
+  // UI setup
+  document.getElementById('convo-title').textContent=S.lesson.icon+' '+S.lesson.title;
+  document.getElementById('convo-stu-name').textContent=S.student.name;
+  document.getElementById('convo-turn-count').textContent='0 turns';
+  document.getElementById('vocab-progress').textContent='0/'+S.lesson.vocab.length;
+  document.getElementById('convo-bg').style.background=TUTORS[S.tutor].bg;
+  // Vocab strip
+  document.getElementById('vocab-strip').innerHTML=S.lesson.vocab.map(v=>
+    `<div class="vpill" onclick="vocabTap('${v.en}')">${v.en} · ${v.ko}</div>`
+  ).join('');
+  // Reset chat
+  document.getElementById('chat-area').innerHTML='';
+  // Timer
+  S.duration=parseInt(set.sessionLength||600);
+  S.secs=S.duration;S.turns=0;S.vocabUsed=0;S.startTime=Date.now();
+  clearInterval(S.timerInt);updateTimer();
+  S.timerInt=setInterval(()=>{S.secs--;updateTimer();if(S.secs<=0)endSession()},1000);
+  // Mic
+  const mb=document.getElementById('speak-btn');
+  mb.disabled=true;mb.classList.remove('listening');
+  document.getElementById('mic-icon').textContent='🎤';
+  document.getElementById('mic-txt').textContent='Speak';
+  document.getElementById('mic-label').textContent='서버에 연결 중입니다...';
+  setSessStatus('connecting');
+  goTo('screen-convo');
+  setTimeout(connectRT,600);
+}
+
+function updateTimer(){
+  const m=Math.floor(S.secs/60),s=S.secs%60;
+  document.getElementById('timer-display').textContent=m+':'+String(s).padStart(2,'0');
+  const pct=(S.secs/S.duration)*100;
+  const bar=document.getElementById('timer-bar');
+  bar.style.width=pct+'%';
+  bar.style.background=pct>50?'var(--yellow)':pct>25?'#FF9B30':'var(--coral)';
+}
+
+function setSessStatus(st,txt){
+  const el=document.getElementById('sess-status');
+  const m={connecting:['b-wait','⏳ 연결 중'],connected:['b-ok','🟢 연결됨'],error:['b-err','❌ 오류'],demo:['b-demo','🔵 데모']};
+  const[cls,lbl]=m[st]||m.demo;
+  el.className='badge '+cls;el.textContent=txt||lbl;
+}
+
+// ── WebRTC via Functions ──────────────────────────────
+async function connectRT(){
+  const set=LS.settings();
+  const fUrl=set.functionsUrl;
+  if(!fUrl){toast('Functions URL 미설정 → 데모 모드');startDemo();return}
+  const model=set.model||'gpt-4o-mini-realtime-preview-2024-12-17';
+  try{
+    document.getElementById('mic-label').textContent='🔐 서버에서 토큰 발급 중...';
+    const tr=await fetch(fUrl,{method:'POST',headers:{'Content-Type':'application/json','x-app-secret':set.appSecret||''},body:JSON.stringify({model,instructions:S.lesson.prompt,voice:TUTORS[S.tutor].voice})});
+    if(!tr.ok){const e=await tr.json().catch(()=>({}));throw new Error('Functions 오류: '+(e.error||tr.status))}
+    const{token}=await tr.json();
+    if(!token)throw new Error('토큰 없음');
+    document.getElementById('mic-label').textContent='🔗 음성 연결 중...';
+    S.pc=new RTCPeerConnection();
+    S.audio=document.createElement('audio');S.audio.autoplay=true;
+    S.pc.ontrack=e=>{S.audio.srcObject=e.streams[0]};
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>S.pc.addTrack(t,stream));
+    S.dc=S.pc.createDataChannel('oai-events');
+    S.dc.onmessage=handleRTEvent;
+    S.dc.onopen=()=>{
+      document.getElementById('speak-btn').disabled=false;
+      document.getElementById('mic-label').textContent='마이크 버튼을 눌러 영어로 말해보세요!';
+      setSessStatus('connected');
+      setTimeout(()=>sendEv({type:'response.create',response:{modalities:['audio','text']}}),800);
+    };
+    S.dc.onclose=()=>setSessStatus('error','🔴 끊김');
+    const offer=await S.pc.createOffer();
+    await S.pc.setLocalDescription(offer);
+    const sr=await fetch('https://api.openai.com/v1/realtime?model='+model,{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/sdp'},body:offer.sdp});
+    if(!sr.ok)throw new Error('SDP 실패: '+sr.status);
+    await S.pc.setRemoteDescription({type:'answer',sdp:await sr.text()});
+  }catch(err){
+    console.error(err);toast('연결 실패: '+err.message.slice(0,40)+' → 데모');
+    setSessStatus('error');startDemo();
+  }
+}
+function sendEv(o){if(S.dc?.readyState==='open')S.dc.send(JSON.stringify(o))}
+
+// ── RT events ────────────────────────────────────────
+function handleRTEvent(ev){
+  let d;try{d=JSON.parse(ev.data)}catch{return}
+  switch(d.type){
+    case'response.audio_transcript.delta':updateAiBubble(d.delta||'');setTalking(true);break;
+    case'response.audio_transcript.done':setTalking(false);finalAiBubble(d.transcript||'');S.turns++;updTurns();break;
+    case'input_audio_buffer.speech_started':setListening(true);break;
+    case'input_audio_buffer.speech_stopped':setListening(false);break;
+    case'conversation.item.input_audio_transcription.completed':addUserBubble(d.transcript||'...');S.turns++;updTurns();break;
+    case'error':toast('오류: '+(d.error?.message||'알 수 없는 오류'));break;
+  }
+}
+function updTurns(){
+  document.getElementById('convo-turn-count').textContent=S.turns+' turns';
+}
+
+// ── Demo ─────────────────────────────────────────────
+const DEMO=[
+  "Hello! I'm your English tutor! What's your name? 😊",
+  "Nice to meet you! How are you today?",
+  "That's great! Let's practice English together! 🌟",
+  'Can you say: "Nice to meet you!"',
+  "Excellent! 잘했어요! You're doing so well!",
+  'Now try: "I am happy today!"',
+  "Perfect! 정말 잘했어요! You're amazing! ⭐",
+];
+function startDemo(){
+  S.demo=true;S.demoIdx=0;
+  document.getElementById('speak-btn').disabled=false;
+  document.getElementById('mic-label').textContent='🔵 데모 모드 — Speak 버튼을 눌러보세요';
+  setSessStatus('demo');
+  setTimeout(()=>addAiBubble(DEMO[S.demoIdx++]),900);
+}
+
+// ── Mic ──────────────────────────────────────────────
+function toggleMic(){
+  if(S.demo){
+    setListening(!S.listening);
+    if(!S.listening){
+      setTimeout(()=>{
+        setListening(false);
+        addUserBubble('Hello! Nice to meet you! I am happy today! 😊');
+        setTimeout(()=>{if(S.demoIdx<DEMO.length)addAiBubble(DEMO[S.demoIdx++])},700);
+      },1600);
+    }
+    return;
+  }
+  if(!S.listening){setListening(true)}
+  else{setListening(false);sendEv({type:'input_audio_buffer.commit'});sendEv({type:'response.create'})}
+}
+function setListening(v){
+  S.listening=v;
+  const btn=document.getElementById('speak-btn');
+  btn.classList.toggle('listening',v);
+  document.getElementById('mic-icon').textContent=v?'⏹':'🎤';
+  document.getElementById('mic-txt').textContent=v?'Stop':'Speak';
+  document.getElementById('mic-label').textContent=v?'🎤 말하고 있어요... 멈추면 자동 전송!':'마이크 버튼을 눌러 영어로 말해보세요!';
+}
+function setTalking(v){
+  S.speaking=v;
+  // animate tutor mouth
+  const svg=document.getElementById('convo-char-svg');
+  if(svg){const mouth=svg.querySelector('.c-mouth');if(mouth)mouth.classList.toggle('talking',v)}
+}
+
+// ── Bubbles ───────────────────────────────────────────
+let _ab=null,_at='';
+function addAiBubble(txt){
+  const area=document.getElementById('chat-area');
+  _ab=document.createElement('div');_ab.className='bubble b-ai';_ab.textContent=txt;
+  area.appendChild(_ab);area.scrollTop=9999;_at=txt;
+  setTalking(true);setTimeout(()=>setTalking(false),txt.length*52+400);
+}
+function updateAiBubble(delta){
+  if(!_ab){
+    const area=document.getElementById('chat-area');
+    _ab=document.createElement('div');_ab.className='bubble b-ai';
+    _ab.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+    area.appendChild(_ab);
+  }
+  _at+=delta;_ab.textContent=_at;
+  document.getElementById('chat-area').scrollTop=9999;
+}
+function finalAiBubble(txt){if(_ab)_ab.textContent=txt||_at;_ab=null;_at=''}
+function addUserBubble(txt){
+  const area=document.getElementById('chat-area');
+  const b=document.createElement('div');b.className='bubble b-user';b.textContent=txt;
+  area.appendChild(b);area.scrollTop=9999;
+  // count vocab
+  S.lesson.vocab.forEach(v=>{if(txt.toLowerCase().includes(v.en.toLowerCase()))S.vocabUsed++});
+  document.getElementById('vocab-progress').textContent=Math.min(S.vocabUsed,S.lesson.vocab.length)+'/'+S.lesson.vocab.length;
+}
+function showHint(){
+  if(!S.lesson)return;
+  const e=S.lesson.expressions[Math.floor(Math.random()*S.lesson.expressions.length)];
+  const area=document.getElementById('chat-area');
+  const b=document.createElement('div');b.className='bubble b-hint';
+  b.textContent='💡 힌트: "'+e.phrase+'" — '+e.ko;
+  area.appendChild(b);area.scrollTop=9999;
+}
+function skipTurn(){
+  if(S.demo){if(S.demoIdx<DEMO.length)addAiBubble(DEMO[S.demoIdx++]);return}
+  sendEv({type:'response.create',response:{modalities:['audio','text']}});
+}
+function vocabTap(w){toast('💡 "'+w+'" 를 대화에서 사용해보세요!')}
+
+// ── End Session ───────────────────────────────────────
+function confirmEnd(){if(confirm('세션을 종료하시겠습니까?'))endSession()}
+function endSession(){
+  clearInterval(S.timerInt);discRT();
+  if(!S.lesson||!S.student){goTo('screen-lessons');return}
+  const elapsed=Math.floor((Date.now()-S.startTime)/1000);
+  const sess={id:Date.now(),studentId:S.student.id,studentName:S.student.name,lessonId:S.lesson.id,lessonTitle:S.lesson.title,turns:S.turns,seconds:elapsed,date:new Date().toLocaleDateString('ko-KR'),ts:Date.now()};
+  const sessions=LS.sessions();sessions.unshift(sess);if(sessions.length>200)sessions.length=200;LS.saveSess(sessions);
+  LS.addDone(S.student.id,S.lesson.id);S.streak++;
+  // Populate complete
+  document.getElementById('cmp-lesson-name').textContent=S.lesson.icon+' '+S.lesson.title+' 완료!';
+  document.getElementById('r-turns').textContent=S.turns;
+  document.getElementById('r-words').textContent=S.lesson.vocab.length;
+  document.getElementById('r-time').textContent=Math.max(1,Math.floor(elapsed/60))+'분';
+  document.getElementById('r-streak').textContent='🔥'+S.streak;
+  document.getElementById('cmp-vocab').innerHTML=S.lesson.vocab.map(v=>
+    `<div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:var(--r-xs);padding:10px 13px;box-shadow:var(--shadow-sm)">
+      <span style="font-size:18px">${S.lesson.icon}</span>
+      <div><div style="font-weight:800;font-size:14px;color:var(--purple)">${v.en}</div><div style="font-size:12px;color:var(--muted)">${v.ko}</div></div>
+      <div style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:600;text-align:right;max-width:100px;font-style:italic">${v.ex}</div>
+    </div>`
+  ).join('');
+  const fbs=['정말 잘했어요! 오늘 '+S.turns+'번이나 말했어요. 대단해요! 🌟','와우! '+S.lesson.title+' 완료! 내일도 함께 해요 😊','훌륭해요! 영어가 점점 늘고 있어요! Keep it up! ⭐','오늘 배운 단어들을 꼭 기억해봐요! 💪'];
+  document.getElementById('cmp-feedback').textContent=fbs[Math.floor(Math.random()*fbs.length)];
+  goTo('screen-complete');
+  saveToServer(sess);
+}
+function discRT(){
+  if(S.pc){S.pc.close();S.pc=null}
+  if(S.dc){S.dc.close();S.dc=null}
+  S.demo=false;S.demoIdx=0;
+}
+function repeatLesson(){if(S.lesson)startLesson(S.lesson.id)}
+
+async function saveToServer(sess){
+  const set=LS.settings();if(!set.functionsUrl)return;
+  const url=set.functionsUrl.replace('getRealtimeToken','saveSessionLog');
+  try{await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId:sess.studentId,studentName:sess.studentName,lessonId:sess.lessonId,lessonTitle:sess.lessonTitle,turns:sess.turns,seconds:sess.seconds})})}catch(e){console.warn('서버 저장 실패:',e)}
+}
+
+// ── Admin ─────────────────────────────────────────────
+function renderAdmin(){
+  const s=LS.settings();
+  if(s.functionsUrl)document.getElementById('f-url').value=s.functionsUrl;
+  if(s.appSecret)document.getElementById('f-secret').value=s.appSecret;
+  if(s.model)document.getElementById('m-select').value=s.model;
+  if(s.sessionLength)document.getElementById('sl-select').value=s.sessionLength;
+  renderAdminStus();renderSessLog();renderLessonPreview();
+}
+function saveFConf(){
+  const url=document.getElementById('f-url').value.trim();
+  const sec=document.getElementById('f-secret').value.trim();
+  if(!url){toast('URL을 입력해주세요');return}
+  LS.saveSets({functionsUrl:url,appSecret:sec});
+  document.getElementById('url-ok').textContent='✅ 저장됨';
+  toast('✅ 서버 설정 저장 완료');checkConnStatus();
+}
+async function testF(){
+  const url=document.getElementById('f-url').value.trim();
+  const sec=document.getElementById('f-secret').value.trim();
+  const el=document.getElementById('test-res');
+  if(!url){toast('URL을 먼저 입력하세요');return}
+  el.textContent='⏳ 테스트 중...';el.style.color='var(--muted)';
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-app-secret':sec},body:JSON.stringify({model:'gpt-4o-mini-realtime-preview-2024-12-17',instructions:'ping'})});
+    if(r.ok){el.textContent='✅ 연결 성공!';el.style.color='var(--green)'}
+    else{const e=await r.json().catch(()=>({}));el.textContent='❌ '+r.status+': '+(e.error||'');el.style.color='var(--coral)'}
+  }catch(e){el.textContent='❌ 네트워크 오류: '+e.message;el.style.color='var(--coral)'}
+}
+function saveModel(){
+  LS.saveSets({model:document.getElementById('m-select').value,sessionLength:parseInt(document.getElementById('sl-select').value)});
+  toast('✅ 모델 설정 저장');
+}
+function addStu(){
+  const name=document.getElementById('ns-name').value.trim();
+  const pin=document.getElementById('ns-pin').value.trim();
+  if(!name){toast('이름을 입력해주세요');return}
+  if(!/^\d{4}$/.test(pin)){toast('PIN은 숫자 4자리');return}
+  const stus=LS.students();stus.push({id:'S'+Date.now(),name,pin});LS.saveStu(stus);
+  document.getElementById('ns-name').value='';document.getElementById('ns-pin').value='';
+  renderAdminStus();renderStudentList();toast('✅ '+name+' 추가');
+}
+function delStu(id){
+  if(!confirm('삭제?'))return;
+  LS.saveStu(LS.students().filter(s=>s.id!==id));
+  renderAdminStus();renderStudentList();toast('삭제 완료');
+}
+function renderAdminStus(){
+  const stus=LS.students();const el=document.getElementById('stu-list-admin');
+  if(!stus.length){el.innerHTML='<p class="fs12 col-m fw7">등록된 학생이 없습니다</p>';return}
+  el.innerHTML=stus.map(s=>`<div class="sitem"><span style="font-size:18px">👤</span><div style="flex:1"><div class="fw8 fs13">${s.name}</div><div class="fs11 col-m fw7">PIN: ${s.pin} · 완료: ${LS.done(s.id).length}개</div></div><button onclick="delStu('${s.id}')" class="btn btn-ghost" style="padding:5px 11px;font-size:12px;color:var(--coral)">삭제</button></div>`).join('');
+}
+function renderSessLog(){
+  const sess=LS.sessions().slice(0,10);const el=document.getElementById('sess-log');
+  if(!sess.length){el.innerHTML='<p class="fs12 col-m fw7">세션 기록 없음</p>';return}
+  el.innerHTML=sess.map(s=>`<div class="sitem"><span style="font-size:16px">💬</span><div style="flex:1"><div class="fw8 fs13">${s.studentName} · ${s.lessonTitle}</div><div class="fs11 col-m fw7">${s.date} · ${s.turns}회 · ${Math.floor(s.seconds/60)}분</div></div></div>`).join('');
+}
+function renderLessonPreview(){
+  document.getElementById('lesson-preview').innerHTML=LESSONS.map(l=>`<div class="sitem"><span style="font-size:18px">${l.icon}</span><div style="flex:1"><div class="fw8 fs13">Day ${l.day}: ${l.title}</div><div class="fs11 col-m fw7">${l.titleKo} · 단어 ${l.vocab.length}개 · ${l.level}</div></div></div>`).join('');
+}
+
+// ── Connection status (login screen) ─────────────────
+async function checkConnStatus(){
+  const set=LS.settings();const badge=document.getElementById('conn-status');
+  if(!set.functionsUrl){badge.className='badge b-demo';badge.textContent='⚠️ 데모 모드';return}
+  badge.className='badge b-wait';badge.textContent='⏳ 서버 확인 중...';
+  try{
+    const r=await fetch(set.functionsUrl,{method:'POST',headers:{'Content-Type':'application/json','x-app-secret':set.appSecret||''},body:JSON.stringify({model:'gpt-4o-mini-realtime-preview-2024-12-17',instructions:'ping'})});
+    badge.className='badge '+(r.ok?'b-ok':'b-err');badge.textContent=r.ok?'🟢 서버 연결됨':'❌ 서버 오류 '+r.status;
+  }catch{badge.className='badge b-err';badge.textContent='❌ 연결 불가'}
+}
+
+// ── Init ──────────────────────────────────────────────
+function init(){
+  if(!LS.students().length){
+    LS.saveStu([{id:'S_d1',name:'민서',pin:'1234'},{id:'S_d2',name:'준호',pin:'1234'},{id:'S_d3',name:'지유',pin:'1234'}]);
+  }
+  renderStudentList();
+  checkConnStatus();
+  // Apply default tutor
+  updateTutorRefs();
+}
+init();
+</script>
+</body>
+</html>
