@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Sunny Talk — AI 영어 튜터</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream:#FFFBEF; --purple:#2D1B69; --purple-light:#4A3296;
+  --purple-pale:#EDE9FF; --yellow:#FFD23F; --yellow-dark:#E8B800;
+  --coral:#FF6B6B; --coral-light:#FFE5E5; --sky:#4FC3F7;
+  --sky-light:#E1F5FE; --green:#69D98C; --green-light:#E8FFF0;
+  --text:#1A1035; --text-muted:#6B5FA0; --white:#FFFFFF;
+  --shadow:0 8px 32px rgba(45,27,105,.15);
+  --shadow-sm:0 4px 16px rgba(45,27,105,.10);
+  --radius:24px; --radius-sm:16px; --radius-xs:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text)}
+
+/* ── Screens ── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;opacity:0;pointer-events:none;transform:translateY(24px);transition:opacity .35s ease,transform .35s cubic-bezier(.34,1.2,.64,1)}
+.screen.active{opacity:1;pointer-events:all;transform:none}
+.screen.exit{opacity:0;transform:translateY(-24px);transition:opacity .25s ease,transform .25s ease}
+
+/* ── Blobs ── */
+.bg-blobs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.18}
+.blob-1{width:400px;height:400px;background:var(--yellow);top:-100px;right:-100px;animation:blobFloat 8s ease-in-out infinite}
+.blob-2{width:300px;height:300px;background:var(--sky);bottom:-80px;left:-80px;animation:blobFloat 10s ease-in-out infinite reverse}
+.blob-3{width:200px;height:200px;background:var(--coral);top:40%;left:60%;animation:blobFloat 12s ease-in-out infinite 2s}
+@keyframes blobFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(20px,-20px) scale(1.05)}66%{transform:translate(-15px,10px) scale(.97)}}
+
+/* ── Character ── */
+.sunny-body{animation:sunnyBob 3s ease-in-out infinite;transform-origin:center bottom}
+@keyframes sunnyBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.eye-upper{animation:eyeBlink 4s ease-in-out infinite;transform-origin:center bottom}
+@keyframes eyeBlink{0%,90%,100%{transform:scaleY(1)}95%{transform:scaleY(0.1)}}
+.mouth-path{transition:d .08s ease}
+.sunny-svg.talking .mouth-path{animation:mouthTalk .2s ease-in-out infinite alternate}
+@keyframes mouthTalk{from{d:path("M 52 78 Q 64 88 76 78")}to{d:path("M 52 76 Q 64 94 76 76")}}
+.sunny-svg.thinking .sunny-body{animation:sunnyThink 1.5s ease-in-out infinite}
+@keyframes sunnyThink{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.star-orbit{animation:starOrbit 6s linear infinite;transform-origin:center center}
+.star-orbit-rev{animation:starOrbit 8s linear infinite reverse;transform-origin:center center}
+@keyframes starOrbit{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 28px;border:none;border-radius:100px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,background .15s ease;text-decoration:none}
+.btn:active{transform:scale(.96)!important}
+.btn-primary{background:var(--purple);color:#fff;box-shadow:0 6px 20px rgba(45,27,105,.4)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(45,27,105,.45)}
+.btn-yellow{background:var(--yellow);color:var(--purple);box-shadow:0 6px 20px rgba(255,210,63,.5)}
+.btn-yellow:hover{transform:translateY(-2px)}
+.btn-coral{background:var(--coral);color:#fff;box-shadow:0 6px 20px rgba(255,107,107,.4)}
+.btn-ghost{background:var(--purple-pale);color:var(--purple);box-shadow:none}
+.btn-ghost:hover{background:#D8D0FF}
+
+/* ── Cards ── */
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+.card-sm{border-radius:var(--radius-sm);padding:16px}
+
+/* ── PIN ── */
+.pin-dots{display:flex;gap:16px;margin:24px 0}
+.pin-dot{width:20px;height:20px;border-radius:50%;border:3px solid var(--purple-pale);background:transparent;transition:background .2s ease,border-color .2s ease,transform .15s ease}
+.pin-dot.filled{background:var(--purple);border-color:var(--purple);transform:scale(1.15)}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:300px}
+.numpad-btn{aspect-ratio:1;border:none;border-radius:var(--radius-sm);background:var(--white);color:var(--text);font-family:'Fredoka One',cursive;font-size:28px;box-shadow:0 4px 12px rgba(45,27,105,.1);cursor:pointer;transition:all .12s ease;display:flex;align-items:center;justify-content:center}
+.numpad-btn:active{transform:scale(.92);background:var(--purple-pale)}
+.numpad-btn.del{font-size:20px;color:var(--text-muted)}
+
+/* ── Lesson cards ── */
+.lesson-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%;padding:0 16px 16px}
+.lesson-card{background:var(--white);border-radius:var(--radius-sm);padding:18px 16px;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .2s ease,box-shadow .2s ease;border:2.5px solid transparent;position:relative;overflow:hidden}
+.lesson-card:active{transform:scale(.96)}
+.lesson-card.today{border-color:var(--yellow)}
+.lesson-card.today::before{content:"TODAY";position:absolute;top:10px;right:-24px;background:var(--yellow);color:var(--purple);font-size:9px;font-weight:900;padding:3px 28px;transform:rotate(45deg);letter-spacing:.5px}
+.lesson-card.completed{opacity:.65}
+.lesson-card.completed::after{content:"✓";position:absolute;bottom:10px;right:14px;color:var(--green);font-size:20px;font-weight:900}
+.lesson-icon{font-size:36px;margin-bottom:8px;display:block}
+.lesson-title{font-weight:800;font-size:14px;margin-bottom:4px;color:var(--text)}
+.lesson-sub{font-size:11px;color:var(--text-muted);font-weight:600}
+.lesson-level{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:800}
+.level-beginner{background:var(--green-light);color:#1B7A40}
+.level-intermediate{background:var(--sky-light);color:#0D6E9A}
+.level-advanced{background:var(--coral-light);color:#A83232}
+
+/* ── Chat ── */
+.convo-header{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--white);box-shadow:0 2px 12px rgba(45,27,105,.08);position:sticky;top:0;z-index:10}
+.lesson-badge{flex:1;font-weight:800;font-size:14px;color:var(--purple)}
+.chat-area{flex:1;width:100%;overflow-y:auto;padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.chat-bubble{max-width:78%;padding:12px 16px;border-radius:20px;font-size:15px;line-height:1.5;font-weight:600;animation:bubbleIn .25s cubic-bezier(.34,1.2,.64,1)}
+@keyframes bubbleIn{from{opacity:0;transform:scale(.9) translateY(6px)}to{opacity:1;transform:none}}
+.bubble-ai{background:var(--purple);color:#fff;border-bottom-left-radius:6px;align-self:flex-start}
+.bubble-user{background:var(--yellow);color:var(--text);border-bottom-right-radius:6px;align-self:flex-end}
+.bubble-hint{background:var(--sky-light);color:#0D6E9A;border-bottom-left-radius:6px;align-self:flex-start;font-size:13px;font-style:italic}
+.typing-dots{display:flex;gap:5px;padding:4px 0}
+.typing-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.7);animation:dotBounce .8s ease-in-out infinite}
+.typing-dots span:nth-child(2){animation-delay:.15s}
+.typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes dotBounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.mic-area{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 20px 32px;background:var(--white);box-shadow:0 -2px 16px rgba(45,27,105,.08)}
+.mic-btn{width:80px;height:80px;border-radius:50%;border:none;background:var(--purple);color:#fff;font-size:30px;cursor:pointer;position:relative;box-shadow:0 8px 28px rgba(45,27,105,.4);transition:all .15s ease;display:flex;align-items:center;justify-content:center}
+.mic-btn.listening{background:var(--coral);box-shadow:0 8px 28px rgba(255,107,107,.5);animation:micPulse 1.2s ease-in-out infinite}
+.mic-btn:disabled{opacity:.45;cursor:not-allowed;animation:none}
+@keyframes micPulse{0%,100%{transform:scale(1);box-shadow:0 8px 28px rgba(255,107,107,.5)}50%{transform:scale(1.08);box-shadow:0 12px 40px rgba(255,107,107,.7)}}
+.mic-label{font-size:12px;font-weight:700;color:var(--text-muted);text-align:center}
+.vocab-strip{width:100%;overflow-x:auto;display:flex;gap:8px;padding:12px 20px;scrollbar-width:none;background:var(--cream)}
+.vocab-strip::-webkit-scrollbar{display:none}
+.vocab-pill{flex-shrink:0;padding:8px 14px;background:var(--white);border-radius:100px;font-size:13px;font-weight:700;color:var(--purple);box-shadow:var(--shadow-sm);cursor:pointer;transition:background .15s}
+.vocab-pill:active{background:var(--purple-pale)}
+.timer-bar-wrap{width:100%;height:6px;background:var(--purple-pale);border-radius:0}
+.timer-bar{height:100%;border-radius:0;background:var(--yellow);transition:width 1s linear}
+
+/* ── Complete ── */
+.stars-row{display:flex;gap:8px;justify-content:center;font-size:36px}
+.star-anim{animation:starPop .5s cubic-bezier(.34,1.5,.64,1) forwards;opacity:0}
+.star-anim:nth-child(2){animation-delay:.15s}
+.star-anim:nth-child(3){animation-delay:.3s}
+@keyframes starPop{from{opacity:0;transform:scale(0) rotate(-20deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.result-chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.result-chip{background:var(--purple-pale);border-radius:var(--radius-sm);padding:14px;text-align:center}
+.result-chip .val{font-family:'Fredoka One',cursive;font-size:32px;color:var(--purple)}
+.result-chip .lbl{font-size:11px;font-weight:700;color:var(--text-muted);margin-top:2px}
+.vocab-review{display:flex;flex-direction:column;gap:8px}
+.vocab-review-item{display:flex;align-items:center;gap:12px;background:var(--white);border-radius:var(--radius-xs);padding:12px 16px;box-shadow:var(--shadow-sm)}
+.word-en{font-weight:800;font-size:15px;color:var(--purple)}
+.word-ko{font-size:13px;color:var(--text-muted)}
+
+/* ── Admin ── */
+.admin-section{margin-bottom:24px}
+.admin-section h3{font-size:14px;font-weight:800;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px}
+.input-field{width:100%;padding:14px 16px;border:2px solid var(--purple-pale);border-radius:var(--radius-xs);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--text);background:var(--white);outline:none;transition:border-color .2s}
+.input-field:focus{border-color:var(--purple)}
+.session-item{background:var(--white);border-radius:var(--radius-xs);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow-sm);display:flex;gap:12px;align-items:center}
+
+/* ── Status badge ── */
+.status-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:800}
+.status-connected{background:var(--green-light);color:#1B7A40}
+.status-connecting{background:var(--yellow);color:#7A5A00}
+.status-error{background:var(--coral-light);color:#A83232}
+.status-demo{background:var(--purple-pale);color:var(--purple)}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:12px 24px;border-radius:100px;font-size:14px;font-weight:700;z-index:999;transition:transform .3s cubic-bezier(.34,1.2,.64,1);white-space:nowrap;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ── Util ── */
+.z1{position:relative;z-index:1}
+.txt-center{text-align:center}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.mb24{margin-bottom:24px}
+.flex{display:flex}.items-center{align-items:center}.gap8{gap:8px}.gap12{gap:12px}
+.w100{width:100%}.fw800{font-weight:800}.fw600{font-weight:600}
+.fs13{font-size:13px}.fs12{font-size:12px}
+.col-muted{color:var(--text-muted)}
+h1,h2,h3{font-family:'Fredoka One',cursive;letter-spacing:.3px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--purple-pale);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="bg-blobs">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1 — LOGIN
+══════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="z1 flex items-center txt-center w100"
+       style="flex-direction:column;padding:40px 24px 0;min-height:100vh;justify-content:center">
+
+    <!-- Sunny character -->
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;margin-bottom:16px">
+      <svg class="sunny-svg" width="160" height="180" viewBox="0 0 160 180" style="overflow:visible;filter:drop-shadow(0 12px 24px rgba(45,27,105,.25))">
+        <g class="sunny-body">
+          <g class="star-orbit" style="transform-origin:80px 85px">
+            <text x="130" y="40" font-size="14" opacity=".7">⭐</text>
+          </g>
+          <g class="star-orbit-rev" style="transform-origin:80px 85px">
+            <text x="20" y="130" font-size="11" opacity=".5">✨</text>
+          </g>
+          <ellipse cx="80" cy="150" rx="38" ry="22" fill="#FFD23F" opacity=".3"/>
+          <rect x="54" y="120" width="52" height="36" rx="16" fill="#4A3296"/>
+          <ellipse cx="80" cy="122" rx="14" ry="8" fill="#FF6B6B"/>
+          <ellipse cx="44" cy="132" rx="10" ry="16" fill="#4A3296" transform="rotate(-15,44,132)"/>
+          <ellipse cx="116" cy="132" rx="10" ry="16" fill="#4A3296" transform="rotate(15,116,132)"/>
+          <circle cx="37" cy="148" r="9" fill="#FFD4A3"/>
+          <circle cx="123" cy="148" r="9" fill="#FFD4A3"/>
+          <rect x="72" y="108" width="16" height="16" rx="4" fill="#FFD4A3"/>
+          <circle cx="80" cy="85" r="42" fill="#FFD4A3"/>
+          <ellipse cx="80" cy="95" rx="38" ry="20" fill="#FBBF7A" opacity=".3"/>
+          <ellipse cx="80" cy="46" rx="38" ry="18" fill="#7C4A1E"/>
+          <ellipse cx="48" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(-10,48,62)"/>
+          <ellipse cx="112" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(10,112,62)"/>
+          <ellipse cx="72" cy="47" rx="8" ry="5" fill="#A0622A" opacity=".6"/>
+          <circle cx="38" cy="85" r="8" fill="#FFD4A3"/>
+          <circle cx="122" cy="85" r="8" fill="#FFD4A3"/>
+          <circle cx="38" cy="85" r="4" fill="#FFB8A0"/>
+          <circle cx="122" cy="85" r="4" fill="#FFB8A0"/>
+          <ellipse cx="62" cy="82" rx="11" ry="13" fill="white"/>
+          <ellipse cx="63" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+          <ellipse cx="65" cy="81" rx="3" ry="3" fill="#5B3A28"/>
+          <circle cx="67" cy="79" r="2.5" fill="white"/>
+          <g class="eye-upper"><path d="M51 79 Q62 69 73 79" fill="#7C4A1E"/></g>
+          <line x1="51" y1="80" x2="47" y2="75" stroke="#7C4A1E" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="73" y1="80" x2="77" y2="75" stroke="#7C4A1E" stroke-width="1.5" stroke-linecap="round"/>
+          <ellipse cx="98" cy="82" rx="11" ry="13" fill="white"/>
+          <ellipse cx="99" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+          <ellipse cx="101" cy="81" rx="3" ry="3" fill="#5B3A28"/>
+          <circle cx="103" cy="79" r="2.5" fill="white"/>
+          <g class="eye-upper"><path d="M87 79 Q98 69 109 79" fill="#7C4A1E"/></g>
+          <line x1="87" y1="80" x2="83" y2="75" stroke="#7C4A1E" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="109" y1="80" x2="113" y2="75" stroke="#7C4A1E" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M51 68 Q62 62 73 67" fill="none" stroke="#7C4A1E" stroke-width="3" stroke-linecap="round"/>
+          <path d="M87 67 Q98 62 109 68" fill="none" stroke="#7C4A1E" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="80" cy="95" rx="4" ry="3" fill="#E8A880"/>
+          <ellipse cx="52" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".45"/>
+          <ellipse cx="108" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".45"/>
+          <path class="mouth-path" d="M 64 106 Q 80 118 96 106" fill="none" stroke="#7C4A1E" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M 69 107 Q 80 115 91 107" fill="white" opacity=".8"/>
+          <text x="100" y="58" font-size="16">⭐</text>
+        </g>
+      </svg>
+    </div>
+
+    <h1 style="font-size:40px;color:var(--purple);line-height:1.1">Sunny Talk</h1>
+    <p style="font-size:15px;color:var(--text-muted);font-weight:700;margin-top:6px">AI 영어 튜터와 함께 말해봐요! 🌟</p>
+
+    <!-- Connection status -->
+    <div id="conn-status" class="status-badge status-demo mt12">⏳ 서버 확인 중...</div>
+
+    <!-- Student list -->
+    <div id="student-select-area" class="mt24 w100" style="max-width:320px">
+      <p class="fs13 fw800 col-muted mb8">내 이름을 선택하세요</p>
+      <div id="student-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:16px"></div>
+    </div>
+
+    <!-- PIN area -->
+    <div id="pin-area" style="display:none;flex-direction:column;align-items:center">
+      <p class="fs13 fw800 col-muted" id="pin-student-name"></p>
+      <div class="pin-dots">
+        <div class="pin-dot" id="dot0"></div>
+        <div class="pin-dot" id="dot1"></div>
+        <div class="pin-dot" id="dot2"></div>
+        <div class="pin-dot" id="dot3"></div>
+      </div>
+      <div class="numpad">
+        <button class="numpad-btn" onclick="pinInput('1')">1</button>
+        <button class="numpad-btn" onclick="pinInput('2')">2</button>
+        <button class="numpad-btn" onclick="pinInput('3')">3</button>
+        <button class="numpad-btn" onclick="pinInput('4')">4</button>
+        <button class="numpad-btn" onclick="pinInput('5')">5</button>
+        <button class="numpad-btn" onclick="pinInput('6')">6</button>
+        <button class="numpad-btn" onclick="pinInput('7')">7</button>
+        <button class="numpad-btn" onclick="pinInput('8')">8</button>
+        <button class="numpad-btn" onclick="pinInput('9')">9</button>
+        <button class="numpad-btn del" onclick="clearStudentSelect()" style="font-size:12px">↩변경</button>
+        <button class="numpad-btn" onclick="pinInput('0')">0</button>
+        <button class="numpad-btn del" onclick="pinDelete()">⌫</button>
+      </div>
+    </div>
+
+    <button onclick="goAdmin()" class="mt24 mb16 fs12 fw600 col-muted"
+            style="background:none;border:none;cursor:pointer;text-decoration:underline">
+      관리자 설정
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2 — LESSONS
+══════════════════════════════════════ -->
+<div id="screen-lessons" class="screen">
+  <div class="z1 w100" style="min-height:100vh;padding-bottom:24px">
+    <div style="padding:24px 20px 16px;background:var(--white);box-shadow:0 2px 12px rgba(45,27,105,.07)">
+      <div class="flex items-center gap8 mb8">
+        <button onclick="goTo('screen-login')" class="btn btn-ghost"
+                style="width:36px;height:36px;padding:0;border-radius:50%;font-size:16px">←</button>
+        <div>
+          <p class="fs12 fw600 col-muted">안녕하세요,</p>
+          <h2 style="font-size:22px;color:var(--purple)" id="lessons-student-name">학생</h2>
+        </div>
+        <div style="margin-left:auto">
+          <svg width="52" height="56" viewBox="0 0 160 180" style="overflow:visible">
+            <g class="sunny-body" style="animation-duration:4s">
+              <rect x="54" y="120" width="52" height="36" rx="16" fill="#4A3296"/>
+              <ellipse cx="80" cy="122" rx="14" ry="8" fill="#FF6B6B"/>
+              <rect x="72" y="108" width="16" height="16" rx="4" fill="#FFD4A3"/>
+              <circle cx="80" cy="85" r="42" fill="#FFD4A3"/>
+              <ellipse cx="80" cy="46" rx="38" ry="18" fill="#7C4A1E"/>
+              <ellipse cx="48" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(-10,48,62)"/>
+              <ellipse cx="112" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(10,112,62)"/>
+              <ellipse cx="62" cy="82" rx="11" ry="13" fill="white"/>
+              <ellipse cx="63" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+              <circle cx="67" cy="79" r="2.5" fill="white"/>
+              <ellipse cx="98" cy="82" rx="11" ry="13" fill="white"/>
+              <ellipse cx="99" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+              <circle cx="103" cy="79" r="2.5" fill="white"/>
+              <ellipse cx="52" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".45"/>
+              <ellipse cx="108" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".45"/>
+              <path d="M 64 106 Q 80 118 96 106" fill="none" stroke="#7C4A1E" stroke-width="2.5" stroke-linecap="round"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+      <div style="background:var(--purple-pale);border-radius:var(--radius-xs);padding:10px 14px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">🔥</span>
+        <div>
+          <p class="fw800 fs13" style="color:var(--purple)">오늘의 목표</p>
+          <p class="fs12 col-muted fw600">레슨 1개 완료하면 별 3개 획득!</p>
+        </div>
+        <div style="margin-left:auto;font-family:'Fredoka One',cursive;font-size:22px;color:var(--yellow-dark)" id="streak-count">0🔥</div>
+      </div>
+    </div>
+    <div style="padding:16px 16px 0">
+      <h2 style="font-size:20px;color:var(--text);margin-bottom:4px">레슨 선택</h2>
+      <p class="fs13 col-muted fw600 mb16">오늘 배울 레슨을 골라보세요!</p>
+    </div>
+    <div class="lesson-grid" id="lesson-grid"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3 — CONVERSATION
+══════════════════════════════════════ -->
+<div id="screen-convo" class="screen">
+  <div class="z1 w100" style="display:flex;flex-direction:column;height:100vh">
+    <div class="convo-header">
+      <button onclick="confirmEndSession()" class="btn btn-ghost"
+              style="width:36px;height:36px;padding:0;border-radius:50%;font-size:16px;flex-shrink:0">✕</button>
+      <div class="lesson-badge" id="convo-lesson-title">레슨 제목</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div id="session-status" class="status-badge status-connecting">⏳ 연결 중</div>
+        <div style="text-align:right">
+          <div style="font-family:'Fredoka One',cursive;font-size:18px;color:var(--purple)" id="timer-display">10:00</div>
+          <div class="fs12 col-muted fw600">남은 시간</div>
+        </div>
+      </div>
+    </div>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timer-bar" style="width:100%"></div>
+    </div>
+    <div class="vocab-strip" id="vocab-strip"></div>
+    <div class="chat-area" id="chat-area">
+      <div id="sunny-center" style="display:flex;flex-direction:column;align-items:center;padding:8px 0 16px">
+        <svg class="sunny-svg" id="sunny-convo" width="120" height="136" viewBox="0 0 160 180" style="overflow:visible">
+          <g class="sunny-body">
+            <rect x="54" y="120" width="52" height="36" rx="16" fill="#4A3296"/>
+            <ellipse cx="80" cy="122" rx="14" ry="8" fill="#FF6B6B"/>
+            <ellipse cx="44" cy="132" rx="10" ry="16" fill="#4A3296" transform="rotate(-15,44,132)"/>
+            <ellipse cx="116" cy="132" rx="10" ry="16" fill="#4A3296" transform="rotate(15,116,132)"/>
+            <circle cx="37" cy="148" r="9" fill="#FFD4A3"/>
+            <circle cx="123" cy="148" r="9" fill="#FFD4A3"/>
+            <rect x="72" y="108" width="16" height="16" rx="4" fill="#FFD4A3"/>
+            <circle cx="80" cy="85" r="42" fill="#FFD4A3"/>
+            <ellipse cx="80" cy="95" rx="38" ry="20" fill="#FBBF7A" opacity=".25"/>
+            <ellipse cx="80" cy="46" rx="38" ry="18" fill="#7C4A1E"/>
+            <ellipse cx="48" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(-10,48,62)"/>
+            <ellipse cx="112" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(10,112,62)"/>
+            <circle cx="38" cy="85" r="8" fill="#FFD4A3"/>
+            <circle cx="122" cy="85" r="8" fill="#FFD4A3"/>
+            <circle cx="38" cy="85" r="4" fill="#FFB8A0"/>
+            <circle cx="122" cy="85" r="4" fill="#FFB8A0"/>
+            <ellipse cx="62" cy="82" rx="11" ry="13" fill="white"/>
+            <ellipse cx="63" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+            <ellipse cx="65" cy="81" rx="3" ry="3" fill="#5B3A28"/>
+            <circle cx="67" cy="79" r="2.5" fill="white"/>
+            <g class="eye-upper"><path d="M51 79 Q62 69 73 79" fill="#7C4A1E"/></g>
+            <ellipse cx="98" cy="82" rx="11" ry="13" fill="white"/>
+            <ellipse cx="99" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+            <ellipse cx="101" cy="81" rx="3" ry="3" fill="#5B3A28"/>
+            <circle cx="103" cy="79" r="2.5" fill="white"/>
+            <g class="eye-upper"><path d="M87 79 Q98 69 109 79" fill="#7C4A1E"/></g>
+            <path d="M51 68 Q62 62 73 67" fill="none" stroke="#7C4A1E" stroke-width="3" stroke-linecap="round"/>
+            <path d="M87 67 Q98 62 109 68" fill="none" stroke="#7C4A1E" stroke-width="3" stroke-linecap="round"/>
+            <ellipse cx="80" cy="95" rx="4" ry="3" fill="#E8A880"/>
+            <ellipse cx="52" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".45"/>
+            <ellipse cx="108" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".45"/>
+            <path class="mouth-path" d="M 64 106 Q 80 118 96 106" fill="none" stroke="#7C4A1E" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M 69 107 Q 80 115 91 107" fill="white" opacity=".8"/>
+            <text x="100" y="58" font-size="16">⭐</text>
+          </g>
+        </svg>
+        <div style="background:var(--purple);color:#fff;border-radius:16px;border-bottom-left-radius:4px;padding:10px 16px;font-size:14px;font-weight:700;max-width:240px;text-align:center;margin-top:8px" id="sunny-greeting">
+          안녕! 나는 Sunny야 😊<br>마이크 버튼을 눌러서 시작해봐!
+        </div>
+      </div>
+    </div>
+    <div class="mic-area">
+      <div class="flex gap8 items-center" style="width:100%;justify-content:center">
+        <button class="btn btn-ghost" style="height:44px;font-size:13px" onclick="showHint()">💡 힌트</button>
+        <button class="mic-btn" id="mic-btn" onclick="toggleMic()" disabled>🎤</button>
+        <button class="btn btn-ghost" style="height:44px;font-size:13px" onclick="skipTurn()">건너뛰기 →</button>
+      </div>
+      <div class="mic-label" id="mic-label">서버에 연결 중입니다...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 4 — COMPLETE
+══════════════════════════════════════ -->
+<div id="screen-complete" class="screen">
+  <div class="z1 w100 flex items-center txt-center"
+       style="flex-direction:column;padding:40px 20px;min-height:100vh;justify-content:center">
+    <div style="position:relative;display:flex;flex-direction:column;align-items:center;margin-bottom:16px">
+      <div style="font-size:48px;position:absolute;top:-20px;left:-20px;animation:starPop .6s ease forwards">🎉</div>
+      <div style="font-size:36px;position:absolute;top:-10px;right:-20px;animation:starPop .6s .2s ease both">🌟</div>
+      <svg width="130" height="148" viewBox="0 0 160 180" style="overflow:visible;filter:drop-shadow(0 12px 24px rgba(45,27,105,.2))">
+        <g class="sunny-body" style="animation-duration:2s">
+          <rect x="54" y="120" width="52" height="36" rx="16" fill="#4A3296"/>
+          <ellipse cx="80" cy="122" rx="14" ry="8" fill="#FFD23F"/>
+          <ellipse cx="28" cy="110" rx="10" ry="18" fill="#4A3296" transform="rotate(-40,28,110)"/>
+          <ellipse cx="132" cy="110" rx="10" ry="18" fill="#4A3296" transform="rotate(40,132,110)"/>
+          <circle cx="16" cy="100" r="9" fill="#FFD4A3"/>
+          <circle cx="144" cy="100" r="9" fill="#FFD4A3"/>
+          <rect x="72" y="108" width="16" height="16" rx="4" fill="#FFD4A3"/>
+          <circle cx="80" cy="85" r="42" fill="#FFD4A3"/>
+          <ellipse cx="80" cy="46" rx="38" ry="18" fill="#7C4A1E"/>
+          <ellipse cx="48" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(-10,48,62)"/>
+          <ellipse cx="112" cy="62" rx="12" ry="22" fill="#7C4A1E" transform="rotate(10,112,62)"/>
+          <circle cx="38" cy="85" r="8" fill="#FFD4A3"/>
+          <circle cx="122" cy="85" r="8" fill="#FFD4A3"/>
+          <ellipse cx="62" cy="82" rx="11" ry="13" fill="white"/>
+          <ellipse cx="63" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+          <circle cx="67" cy="79" r="2.5" fill="white"/>
+          <ellipse cx="98" cy="82" rx="11" ry="13" fill="white"/>
+          <ellipse cx="99" cy="84" rx="7" ry="8" fill="#3D2B1F"/>
+          <circle cx="103" cy="79" r="2.5" fill="white"/>
+          <ellipse cx="52" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".55"/>
+          <ellipse cx="108" cy="96" rx="10" ry="7" fill="#FF9B9B" opacity=".55"/>
+          <path d="M 58 104 Q 80 124 102 104" fill="none" stroke="#7C4A1E" stroke-width="3" stroke-linecap="round"/>
+          <path d="M 63 106 Q 80 120 97 106" fill="white" opacity=".9"/>
+          <text x="100" y="58" font-size="16">⭐</text>
+        </g>
+      </svg>
+    </div>
+    <h1 style="font-size:34px;color:var(--purple)">완료! 🎊</h1>
+    <p class="fw700 fs13 col-muted mt8 mb16" id="complete-lesson-name">레슨을 마쳤어요!</p>
+    <div class="stars-row mb16">
+      <span class="star-anim">⭐</span>
+      <span class="star-anim">⭐</span>
+      <span class="star-anim">⭐</span>
+    </div>
+    <div class="result-chips mb24 w100" style="max-width:320px">
+      <div class="result-chip"><div class="val" id="res-turns">0</div><div class="lbl">대화 횟수</div></div>
+      <div class="result-chip"><div class="val" id="res-words">0</div><div class="lbl">연습한 단어</div></div>
+      <div class="result-chip"><div class="val" id="res-time">0분</div><div class="lbl">대화 시간</div></div>
+      <div class="result-chip"><div class="val" id="res-streak">🔥1</div><div class="lbl">연속 학습</div></div>
+    </div>
+    <div class="card w100 mb16" style="max-width:360px;text-align:left">
+      <h3 style="font-size:16px;color:var(--purple);margin-bottom:12px">오늘 배운 단어 📚</h3>
+      <div class="vocab-review" id="complete-vocab"></div>
+    </div>
+    <div class="card w100 mb24" style="max-width:360px;text-align:left;background:var(--purple-pale)">
+      <h3 style="font-size:15px;color:var(--purple);margin-bottom:10px">Sunny의 한마디 💬</h3>
+      <p style="font-size:14px;color:var(--text-muted);font-weight:700;line-height:1.6" id="complete-feedback">정말 잘했어요!</p>
+    </div>
+    <div class="flex gap8 w100" style="max-width:320px">
+      <button onclick="goTo('screen-lessons')" class="btn btn-ghost" style="flex:1">다른 레슨</button>
+      <button onclick="repeatLesson()" class="btn btn-primary" style="flex:1">다시 연습</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 5 — ADMIN
+══════════════════════════════════════ -->
+<div id="screen-admin" class="screen">
+  <div class="z1 w100" style="padding:24px 20px 40px;min-height:100vh">
+    <div class="flex items-center gap8 mb24">
+      <button onclick="goTo('screen-login')" class="btn btn-ghost"
+              style="width:36px;height:36px;padding:0;border-radius:50%;font-size:16px">←</button>
+      <h2 style="font-size:24px;color:var(--purple)">관리자 설정</h2>
+    </div>
+
+    <!-- ─ Functions URL ─ -->
+    <div class="admin-section">
+      <h3>🔐 서버 연결 설정</h3>
+      <div class="card card-sm">
+        <p class="fs13 col-muted fw600 mb8">
+          Firebase Functions URL
+          <span style="font-size:11px;color:var(--green);font-weight:800;margin-left:6px" id="url-saved-badge"></span>
+        </p>
+        <input type="url" class="input-field" id="functions-url-input"
+               placeholder="https://asia-northeast1-PROJECT.cloudfunctions.net/getRealtimeToken">
+        <p class="fs12 col-muted mt8 fw600" style="line-height:1.6">
+          ✅ API Key는 Functions 서버에만 보관됩니다.<br>
+          이 앱에는 URL만 저장되며, Key는 절대 저장되지 않습니다.
+        </p>
+        <p class="fs13 col-muted fw600 mt12 mb8">앱 식별 Secret (Functions와 동일한 값)</p>
+        <input type="password" class="input-field" id="app-secret-input"
+               placeholder="Functions에 설정한 APP_SECRET 값">
+        <p class="fs12 col-muted mt8 fw600">
+          ⚠️ 이 값은 API Key와 다릅니다. Functions 접근용 간단한 비밀번호입니다.
+        </p>
+        <div class="flex gap8 mt12">
+          <button onclick="saveFunctionsConfig()" class="btn btn-primary" style="flex:1;padding:12px">저장</button>
+          <button onclick="testFunctionsConnection()" class="btn btn-ghost" style="flex:1;padding:12px">연결 테스트</button>
+        </div>
+        <div id="test-result" style="margin-top:10px;font-size:13px;font-weight:700"></div>
+      </div>
+    </div>
+
+    <!-- ─ Model settings ─ -->
+    <div class="admin-section">
+      <h3>⚙️ 모델 설정</h3>
+      <div class="card card-sm">
+        <p class="fs13 col-muted fw600 mb8">Realtime 모델</p>
+        <select class="input-field" id="model-select">
+          <option value="gpt-4o-mini-realtime-preview-2024-12-17">gpt-4o-mini-realtime (절약형 ★추천)</option>
+          <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime (고품질)</option>
+        </select>
+        <p class="fs13 col-muted fw600 mt12 mb8">세션 시간</p>
+        <select class="input-field" id="session-length-select">
+          <option value="600">10분 (초등 추천)</option>
+          <option value="900">15분 (중등 추천)</option>
+          <option value="300">5분 (체험용)</option>
+        </select>
+        <button onclick="saveModelSettings()" class="btn btn-primary mt12 w100" style="padding:12px">저장</button>
+      </div>
+    </div>
+
+    <!-- ─ Student management ─ -->
+    <div class="admin-section">
+      <h3>👤 학생 관리</h3>
+      <div class="card card-sm">
+        <div class="flex gap8 mb12">
+          <input type="text" class="input-field" id="new-student-name" placeholder="학생 이름">
+          <input type="text" class="input-field" id="new-student-pin"
+                 placeholder="PIN 4자리" maxlength="4" style="width:120px;flex-shrink:0">
+        </div>
+        <button onclick="addStudent()" class="btn btn-primary w100" style="padding:12px">+ 학생 추가</button>
+      </div>
+      <div id="student-admin-list" class="mt12"></div>
+    </div>
+
+    <!-- ─ Session log ─ -->
+    <div class="admin-section">
+      <h3>📊 최근 세션 로그</h3>
+      <div id="session-log"></div>
+    </div>
+
+    <!-- ─ Lesson list ─ -->
+    <div class="admin-section">
+      <h3>📚 내장 레슨 목록</h3>
+      <div id="lesson-preview-list"></div>
+    </div>
+
+    <!-- ─ Deploy guide ─ -->
+    <div class="admin-section">
+      <h3>🚀 배포 가이드</h3>
+      <div class="card card-sm" style="background:var(--purple);color:#fff">
+        <p style="font-size:13px;font-weight:800;line-height:2;color:#fff;white-space:pre-wrap">1. firebase login
+2. firebase use YOUR_PROJECT_ID
+3. cd functions &amp;&amp; npm install
+4. firebase functions:secrets:set OPENAI_API_KEY
+   → sk-proj-... 입력
+5. firebase functions:secrets:set APP_SECRET
+   → 임의의 비밀번호 입력 (예: sunnytalk2024)
+6. firebase deploy --only functions
+7. Functions URL 복사 → 이 화면에 붙여넣기
+8. APP_SECRET 동일 값 → 이 화면에 입력 후 저장</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════ -->
+<script>
+// ──────────────────────────────────────
+// 설정 상수
+// ──────────────────────────────────────
+// ✅ API Key는 여기 없음 — Firebase Functions가 처리
+// 클라이언트에 저장되는 것: Functions URL, APP_SECRET(앱식별자), 학생 데이터
+
+const state = {
+  currentStudent: null,
+  currentLesson: null,
+  pinInput: '',
+  sessionStartTime: null,
+  sessionTurns: 0,
+  sessionSeconds: 0,
+  timerInterval: null,
+  sessionDuration: 600,
+  peerConnection: null,
+  dataChannel: null,
+  audioEl: null,
+  isListening: false,
+  isSpeaking: false,
+  streak: 0,
+  demoMode: false,
+  demoIdx: 0,
+  connected: false,
+};
+
+// ──────────────────────────────────────
+// 레슨 데이터
+// ──────────────────────────────────────
+const LESSONS = [
+  {
+    id:'L01', day:1, icon:'👋', title:'Greetings & Introductions', titleKo:'인사와 자기소개', level:'beginner',
+    vocab:[
+      {en:'hello',       ko:'안녕하세요',   ex:'Hello! My name is Sunny.'},
+      {en:'nice',        ko:'좋은',         ex:'Nice to meet you!'},
+      {en:'my name',     ko:'내 이름',      ex:'My name is Minseo.'},
+      {en:'how are you', ko:'잘 지내나요?', ex:'How are you today?'},
+      {en:'fine',        ko:'괜찮아요',     ex:"I'm fine, thank you!"},
+    ],
+    expressions:[
+      {phrase:'Nice to meet you!',  ko:'만나서 반가워요!'},
+      {phrase:'How are you?',       ko:'잘 지내요?'},
+      {phrase:"I'm doing great!",   ko:'저는 정말 잘 지내요!'},
+    ],
+    grammar:{point:'I am + 형용사', example:'I am happy / I am fine / I am excited!'},
+    systemPrompt:`You are Sunny, an adorable and encouraging English tutor for Korean elementary students.
+Today's lesson is "Greetings & Introductions".
+Key vocabulary: hello, nice, my name, how are you, fine.
+Key expressions: "Nice to meet you!", "How are you?", "I'm doing great!"
+Grammar focus: I am + adjective
+
+Rules:
+- Keep ALL responses to 1-2 short sentences max.
+- Start by introducing yourself warmly and ask the student's name.
+- If student makes a grammar mistake, continue conversation and naturally model the correct form. Never explicitly correct.
+- If student seems stuck, give a hint like: You can say: "Nice to meet you!"
+- Mix in occasional Korean encouragement: 잘했어요! or Good job!
+- After every 2-3 exchanges, introduce a new vocab word naturally.
+- Speak slowly and clearly. Elementary level only.`,
+  },
+  {
+    id:'L02', day:2, icon:'👨‍👩‍👧', title:'My Family', titleKo:'우리 가족', level:'beginner',
+    vocab:[
+      {en:'mother',  ko:'어머니',    ex:'My mother is kind.'},
+      {en:'father',  ko:'아버지',    ex:'My father is tall.'},
+      {en:'brother', ko:'남자 형제', ex:'I have one brother.'},
+      {en:'sister',  ko:'여자 형제', ex:'My sister is funny.'},
+      {en:'family',  ko:'가족',      ex:'I love my family!'},
+    ],
+    expressions:[
+      {phrase:'I have a brother.',      ko:'저는 남자 형제가 있어요.'},
+      {phrase:'My mother is very kind.',ko:'우리 엄마는 정말 친절해요.'},
+      {phrase:'We are a happy family.', ko:'우리는 행복한 가족이에요.'},
+    ],
+    grammar:{point:'have/has 소유 표현', example:'I have a sister. / She has a brother.'},
+    systemPrompt:`You are Sunny, a fun English tutor for Korean kids.
+Today's lesson: "My Family".
+Vocab: mother, father, brother, sister, family.
+Expressions: "I have a brother.", "My mother is very kind.", "We are a happy family."
+Grammar: have/has
+
+Rules: Keep responses 1-2 sentences. Ask about their own family. Warm and encouraging. Model correct grammar naturally.`,
+  },
+  {
+    id:'L03', day:3, icon:'🍕', title:'Food I Love', titleKo:'내가 좋아하는 음식', level:'beginner',
+    vocab:[
+      {en:'favorite',   ko:'가장 좋아하는', ex:'My favorite food is pizza.'},
+      {en:'delicious',  ko:'맛있는',        ex:'This is so delicious!'},
+      {en:'hungry',     ko:'배고픈',        ex:'I am hungry.'},
+      {en:'eat',        ko:'먹다',          ex:'I eat rice every day.'},
+      {en:'drink',      ko:'마시다',        ex:'I drink milk in the morning.'},
+    ],
+    expressions:[
+      {phrase:'My favorite food is ___.',ko:'제가 가장 좋아하는 음식은 ___이에요.'},
+      {phrase:'I love eating ___!',      ko:'저는 ___ 먹는 걸 좋아해요!'},
+      {phrase:'It tastes so good!',      ko:'정말 맛있어요!'},
+    ],
+    grammar:{point:'like/love + -ing', example:'I like eating pizza. / I love drinking juice.'},
+    systemPrompt:`You are Sunny, an enthusiastic English tutor.
+Today's lesson: "Food I Love".
+Vocab: favorite, delicious, hungry, eat, drink.
+Expressions: "My favorite food is ___.", "I love eating ___!", "It tastes so good!"
+Grammar: like/love + -ing
+
+Rules: Ask about favorite foods. Be playful — pretend to taste foods together! Short responses only.`,
+  },
+  {
+    id:'L04', day:4, icon:'🏫', title:'School Life', titleKo:'학교 생활', level:'intermediate',
+    vocab:[
+      {en:'subject',  ko:'과목',     ex:'My favorite subject is English.'},
+      {en:'teacher',  ko:'선생님',   ex:'My teacher is very nice.'},
+      {en:'study',    ko:'공부하다', ex:'I study every evening.'},
+      {en:'homework', ko:'숙제',     ex:'I have homework today.'},
+      {en:'friend',   ko:'친구',     ex:'My best friend is fun.'},
+    ],
+    expressions:[
+      {phrase:'My favorite subject is ___.',    ko:'제가 좋아하는 과목은 ___이에요.'},
+      {phrase:"I go to school at ___ o'clock.", ko:'저는 ___시에 학교에 가요.'},
+      {phrase:'School is fun!',                  ko:'학교는 재미있어요!'},
+    ],
+    grammar:{point:'단순 현재 시제', example:'I go to school. / I study English.'},
+    systemPrompt:`You are Sunny, an encouraging English tutor.
+Today's lesson: "School Life".
+Vocab: subject, teacher, study, homework, friend.
+Grammar: Simple present tense (I go, I study, I have)
+
+Rules: Ask about their school day and favorite subjects. Keep it relatable and fun. 1-2 sentences per response.`,
+  },
+  {
+    id:'L05', day:5, icon:'🌅', title:'My Daily Routine', titleKo:'나의 하루', level:'intermediate',
+    vocab:[
+      {en:'wake up',   ko:'일어나다',   ex:"I wake up at 7 o'clock."},
+      {en:'breakfast', ko:'아침 식사',  ex:'I eat breakfast with my family.'},
+      {en:'go to bed', ko:'자다',       ex:"I go to bed at 10 o'clock."},
+      {en:'always',    ko:'항상',       ex:'I always brush my teeth.'},
+      {en:'usually',   ko:'보통',       ex:'I usually walk to school.'},
+    ],
+    expressions:[
+      {phrase:"I wake up at ___ o'clock.",ko:'저는 ___시에 일어나요.'},
+      {phrase:'First I ___, then I ___.',  ko:'먼저 ___하고, 그 다음에 ___해요.'},
+      {phrase:'I always / usually ___.',   ko:'저는 항상/보통 ___해요.'},
+    ],
+    grammar:{point:'빈도 부사', example:'I always eat breakfast. / I usually study at night.'},
+    systemPrompt:`You are Sunny, a friendly English tutor.
+Today's lesson: "My Daily Routine".
+Vocab: wake up, breakfast, go to bed, always, usually.
+Grammar: Frequency adverbs (always, usually, sometimes, never)
+
+Rules: Talk through a typical school day. Ask what time they wake up, eat, study, sleep. Natural conversation about daily life. Short responses.`,
+  },
+  {
+    id:'L06', day:6, icon:'🏃', title:'Sports & Hobbies', titleKo:'스포츠와 취미', level:'intermediate',
+    vocab:[
+      {en:'hobby',    ko:'취미',     ex:'My hobby is drawing.'},
+      {en:'play',     ko:'하다/놀다',ex:'I play soccer after school.'},
+      {en:'good at',  ko:'잘하다',   ex:'I am good at swimming.'},
+      {en:'practice', ko:'연습하다', ex:'I practice piano every day.'},
+      {en:'team',     ko:'팀',       ex:'I am on the school team.'},
+    ],
+    expressions:[
+      {phrase:'My hobby is ___ing.',  ko:'제 취미는 ___이에요.'},
+      {phrase:'I am good at ___.',    ko:'저는 ___를 잘해요.'},
+      {phrase:'I play ___ with ___.',  ko:'저는 ___와 함께 ___을 해요.'},
+    ],
+    grammar:{point:'be good at + -ing', example:'I am good at playing piano. / She is good at swimming.'},
+    systemPrompt:`You are Sunny, an energetic English tutor.
+Today's lesson: "Sports & Hobbies".
+Vocab: hobby, play, good at, practice, team.
+Grammar: be good at + gerund (-ing)
+
+Rules: Chat about their hobbies and sports. Be enthusiastic! Share "Sunny's favorite hobby" to make it fun. Short responses.`,
+  },
+];
+
+// ──────────────────────────────────────
+// Storage
+// ──────────────────────────────────────
+const LS = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+  getStudents: () => LS.get('st_students') || [],
+  saveStudents: (a) => LS.set('st_students', a),
+  getSessions: () => LS.get('st_sessions') || [],
+  saveSessions: (a) => LS.set('st_sessions', a),
+  getSettings: () => LS.get('st_settings') || {},
+  saveSettings: (o) => LS.set('st_settings', { ...LS.getSettings(), ...o }),
+  getCompleted: (sid) => LS.get('st_done_' + sid) || [],
+  addCompleted: (sid, lid) => {
+    const a = LS.getCompleted(sid);
+    if (!a.includes(lid)) { a.push(lid); LS.set('st_done_' + sid, a); }
+  },
+};
+
+// ──────────────────────────────────────
+// Toast
+// ──────────────────────────────────────
+function toast(msg, dur = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ──────────────────────────────────────
+// Navigation
+// ──────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.screen.active').forEach(s => {
+    if (s.id !== id) {
+      s.classList.add('exit');
+      setTimeout(() => s.classList.remove('active', 'exit'), 300);
+    }
+  });
+  setTimeout(() => document.getElementById(id).classList.add('active'), 100);
+}
+function goAdmin() { renderAdminScreen(); goTo('screen-admin'); }
+
+// ──────────────────────────────────────
+// Login
+// ──────────────────────────────────────
+function renderStudentList() {
+  const students = LS.getStudents();
+  const el = document.getElementById('student-list');
+  if (!students.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--text-muted);font-weight:700">관리자에서 학생을 추가해주세요</p>';
+    return;
+  }
+  el.innerHTML = students.map(s =>
+    `<button onclick="selectStudent('${s.id}')" class="btn btn-ghost" style="font-size:15px;padding:10px 20px">${s.name}</button>`
+  ).join('');
+}
+
+function selectStudent(id) {
+  state.currentStudent = LS.getStudents().find(s => s.id === id);
+  if (!state.currentStudent) return;
+  document.getElementById('pin-student-name').textContent = `${state.currentStudent.name}의 PIN을 입력하세요`;
+  document.getElementById('student-select-area').style.display = 'none';
+  document.getElementById('pin-area').style.display = 'flex';
+  state.pinInput = '';
+  updateDots();
+}
+
+function clearStudentSelect() {
+  document.getElementById('student-select-area').style.display = '';
+  document.getElementById('pin-area').style.display = 'none';
+  state.pinInput = '';
+}
+
+function pinInput(d) {
+  if (state.pinInput.length >= 4) return;
+  state.pinInput += d; updateDots();
+  if (state.pinInput.length === 4) setTimeout(checkPin, 150);
+}
+function pinDelete() { state.pinInput = state.pinInput.slice(0, -1); updateDots(); }
+function updateDots() {
+  for (let i = 0; i < 4; i++)
+    document.getElementById('dot' + i).classList.toggle('filled', i < state.pinInput.length);
+}
+function checkPin() {
+  if (state.pinInput === state.currentStudent.pin) {
+    state.streak = LS.getSessions().filter(s => s.studentId === state.currentStudent.id).length;
+    goToLessons();
+  } else {
+    toast('PIN이 맞지 않아요 😅');
+    state.pinInput = ''; updateDots();
+  }
+}
+
+// ──────────────────────────────────────
+// Lessons
+// ──────────────────────────────────────
+function goToLessons() {
+  document.getElementById('lessons-student-name').textContent = state.currentStudent.name + ' ✨';
+  document.getElementById('streak-count').textContent = state.streak + '🔥';
+  renderLessons();
+  goTo('screen-lessons');
+}
+
+function renderLessons() {
+  const completed = LS.getCompleted(state.currentStudent.id);
+  const todayIdx = completed.length % LESSONS.length;
+  document.getElementById('lesson-grid').innerHTML = LESSONS.map((l, i) => {
+    const isDone = completed.includes(l.id);
+    const isToday = i === todayIdx;
+    const lvlCls = l.level === 'beginner' ? 'level-beginner' : l.level === 'intermediate' ? 'level-intermediate' : 'level-advanced';
+    const lvlTxt = l.level === 'beginner' ? '초급' : l.level === 'intermediate' ? '중급' : '고급';
+    return `<div class="lesson-card ${isToday ? 'today' : ''} ${isDone ? 'completed' : ''}" onclick="startLesson('${l.id}')">
+      <span class="lesson-icon">${l.icon}</span>
+      <div class="lesson-title">${l.title}</div>
+      <div class="lesson-sub">${l.titleKo}</div>
+      <div class="lesson-level ${lvlCls}">${lvlTxt}</div>
+    </div>`;
+  }).join('');
+}
+
+// ──────────────────────────────────────
+// Start Lesson
+// ──────────────────────────────────────
+function startLesson(lessonId) {
+  state.currentLesson = LESSONS.find(l => l.id === lessonId);
+  if (!state.currentLesson) return;
+
+  // Setup UI
+  document.getElementById('convo-lesson-title').textContent =
+    state.currentLesson.icon + ' ' + state.currentLesson.title;
+
+  document.getElementById('vocab-strip').innerHTML =
+    state.currentLesson.vocab.map(v =>
+      `<div class="vocab-pill" onclick="vocabTap('${v.en}')">${v.en} · ${v.ko}</div>`
+    ).join('');
+
+  // Reset chat
+  const area = document.getElementById('chat-area');
+  area.querySelectorAll('.chat-bubble').forEach(b => b.remove());
+  document.getElementById('sunny-center').style.display = 'flex';
+
+  // Timer
+  const settings = LS.getSettings();
+  state.sessionDuration = parseInt(settings.sessionLength || 600);
+  state.sessionSeconds = state.sessionDuration;
+  state.sessionTurns = 0;
+  state.sessionStartTime = Date.now();
+  clearInterval(state.timerInterval);
+  updateTimer();
+  state.timerInterval = setInterval(() => {
+    state.sessionSeconds--;
+    updateTimer();
+    if (state.sessionSeconds <= 0) endSession();
+  }, 1000);
+
+  // Mic disabled until connected
+  document.getElementById('mic-btn').disabled = true;
+  setSessionStatus('connecting');
+
+  goTo('screen-convo');
+  setTimeout(connectRealtime, 600);
+}
+
+function updateTimer() {
+  const m = Math.floor(state.sessionSeconds / 60);
+  const s = state.sessionSeconds % 60;
+  document.getElementById('timer-display').textContent = m + ':' + String(s).padStart(2, '0');
+  const pct = (state.sessionSeconds / state.sessionDuration) * 100;
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 50 ? 'var(--yellow)' : pct > 25 ? '#FF9B30' : 'var(--coral)';
+}
+
+function setSessionStatus(status, text) {
+  const el = document.getElementById('session-status');
+  const labels = {
+    connecting: ['status-connecting', '⏳ 연결 중'],
+    connected:  ['status-connected',  '🟢 연결됨'],
+    error:      ['status-error',      '❌ 오류'],
+    demo:       ['status-demo',       '🔵 데모'],
+  };
+  const [cls, lbl] = labels[status] || labels.demo;
+  el.className = 'status-badge ' + cls;
+  el.textContent = text || lbl;
+}
+
+// ──────────────────────────────────────
+// ✅ WebRTC — Functions 프록시 사용
+//    API Key는 클라이언트에 없음
+// ──────────────────────────────────────
+async function connectRealtime() {
+  const settings = LS.getSettings();
+  const functionsUrl = settings.functionsUrl;
+  const appSecret = settings.appSecret;
+
+  // Functions URL이 없으면 데모 모드
+  if (!functionsUrl) {
+    toast('Functions URL 미설정 → 데모 모드로 실행');
+    startDemoMode();
+    return;
+  }
+
+  const model = settings.model || 'gpt-4o-mini-realtime-preview-2024-12-17';
+
+  try {
+    document.getElementById('mic-label').textContent = '🔐 서버에서 세션 토큰 발급 중...';
+
+    // ✅ Step 1: Functions에 ephemeral token 요청
+    //    API Key는 Functions 서버에만 있음 — 클라이언트에는 절대 오지 않음
+    const tokenRes = await fetch(functionsUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Functions에 앱 식별자 전달 (API Key 아님)
+        'x-app-secret': appSecret || '',
+      },
+      body: JSON.stringify({
+        model,
+        instructions: state.currentLesson.systemPrompt,
+        voice: 'shimmer',
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      const err = await tokenRes.json().catch(() => ({}));
+      throw new Error('Functions 오류: ' + (err.error || tokenRes.status));
+    }
+
+    const { token } = await tokenRes.json();
+    if (!token) throw new Error('토큰이 없습니다');
+
+    document.getElementById('mic-label').textContent = '🔗 음성 연결 중...';
+
+    // ✅ Step 2: 받은 ephemeral token으로 WebRTC 연결
+    //    이 token은 60초 수명, 1회용 → 노출돼도 즉시 만료
+    state.peerConnection = new RTCPeerConnection();
+    state.audioEl = document.createElement('audio');
+    state.audioEl.autoplay = true;
+
+    state.peerConnection.ontrack = (e) => {
+      state.audioEl.srcObject = e.streams[0];
+    };
+
+    // 마이크 스트림 추가
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(track => state.peerConnection.addTrack(track, stream));
+
+    // 데이터 채널
+    state.dataChannel = state.peerConnection.createDataChannel('oai-events');
+    state.dataChannel.onmessage = handleRealtimeEvent;
+    state.dataChannel.onopen = () => {
+      state.connected = true;
+      document.getElementById('mic-btn').disabled = false;
+      document.getElementById('mic-label').textContent = '마이크 버튼을 눌러 말해보세요!';
+      setSessionStatus('connected');
+      // 첫 인사 트리거
+      setTimeout(() => sendEvent({ type: 'response.create', response: { modalities: ['audio', 'text'] } }), 800);
+    };
+
+    state.dataChannel.onclose = () => {
+      state.connected = false;
+      setSessionStatus('error', '🔴 연결 끊김');
+    };
+
+    // ✅ SDP 교환 — ephemeral token 사용 (API Key 아님)
+    const offer = await state.peerConnection.createOffer();
+    await state.peerConnection.setLocalDescription(offer);
+
+    const sdpRes = await fetch(
+      'https://api.openai.com/v1/realtime?model=' + model,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token, // 60초짜리 1회용 token
+          'Content-Type': 'application/sdp',
+        },
+        body: offer.sdp,
+      }
+    );
+
+    if (!sdpRes.ok) throw new Error('WebRTC SDP 교환 실패: ' + sdpRes.status);
+
+    const answerSdp = await sdpRes.text();
+    await state.peerConnection.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+
+  } catch (err) {
+    console.error('[connectRealtime]', err);
+    toast('연결 실패: ' + err.message + ' → 데모 모드 전환');
+    setSessionStatus('error', '❌ ' + err.message.slice(0, 20));
+    startDemoMode();
+  }
+}
+
+function sendEvent(obj) {
+  if (state.dataChannel?.readyState === 'open') {
+    state.dataChannel.send(JSON.stringify(obj));
+  }
+}
+
+// ──────────────────────────────────────
+// Realtime 이벤트 처리
+// ──────────────────────────────────────
+function handleRealtimeEvent(event) {
+  let data; try { data = JSON.parse(event.data); } catch { return; }
+  switch (data.type) {
+    case 'response.audio_transcript.delta':
+      updateLastAiBubble(data.delta || '');
+      setSunnyTalking(true);
+      break;
+    case 'response.audio_transcript.done':
+      setSunnyTalking(false);
+      finalizeAiBubble(data.transcript || '');
+      state.sessionTurns++;
+      break;
+    case 'input_audio_buffer.speech_started':
+      setListening(true);
+      break;
+    case 'input_audio_buffer.speech_stopped':
+      setListening(false);
+      break;
+    case 'conversation.item.input_audio_transcription.completed':
+      addUserBubble(data.transcript || '...');
+      state.sessionTurns++;
+      break;
+    case 'error':
+      toast('오류: ' + (data.error?.message || '알 수 없는 오류'));
+      break;
+  }
+}
+
+// ──────────────────────────────────────
+// Demo Mode
+// ──────────────────────────────────────
+const DEMO_SCRIPT = [
+  "Hello! I'm Sunny! What's your name? 😊",
+  "Nice to meet you! How are you today?",
+  "That's great! Let's practice English together! 🌟",
+  'Can you say: "Nice to meet you!"',
+  "Excellent! 잘했어요! You're doing so well!",
+  'Now try: "I am happy today!"',
+  "Perfect! 정말 잘했어요! You\'re an amazing English speaker! ⭐",
+];
+
+function startDemoMode() {
+  state.demoMode = true;
+  state.demoIdx = 0;
+  document.getElementById('mic-btn').disabled = false;
+  document.getElementById('mic-label').textContent = '🔵 데모 모드 — 마이크 버튼을 눌러보세요';
+  setSessionStatus('demo');
+  setTimeout(() => addAiBubble(DEMO_SCRIPT[state.demoIdx++]), 1000);
+}
+
+// ──────────────────────────────────────
+// Mic
+// ──────────────────────────────────────
+function toggleMic() {
+  if (state.demoMode) {
+    setListening(!state.isListening);
+    if (!state.isListening) {
+      setTimeout(() => {
+        setListening(false);
+        addUserBubble('Hello! Nice to meet you! I am happy! 😊');
+        setTimeout(() => {
+          if (state.demoIdx < DEMO_SCRIPT.length) addAiBubble(DEMO_SCRIPT[state.demoIdx++]);
+        }, 600);
+      }, 1500);
+    }
+    return;
+  }
+  if (!state.isListening) {
+    setListening(true);
+  } else {
+    setListening(false);
+    sendEvent({ type: 'input_audio_buffer.commit' });
+    sendEvent({ type: 'response.create' });
+  }
+}
+
+function setListening(val) {
+  state.isListening = val;
+  const btn = document.getElementById('mic-btn');
+  btn.classList.toggle('listening', val);
+  btn.textContent = val ? '⏹' : '🎤';
+  document.getElementById('mic-label').textContent =
+    val ? '🎤 말하고 있어요... 멈추면 자동 전송됩니다!' : '마이크 버튼을 눌러 말해보세요!';
+}
+
+function setSunnyTalking(val) {
+  state.isSpeaking = val;
+  document.getElementById('sunny-convo').classList.toggle('talking', val);
+}
+
+// ──────────────────────────────────────
+// Chat bubbles
+// ──────────────────────────────────────
+let _curBubble = null, _curText = '';
+
+function addAiBubble(text) {
+  hideSunnyCenter();
+  const area = document.getElementById('chat-area');
+  _curBubble = document.createElement('div');
+  _curBubble.className = 'chat-bubble bubble-ai';
+  _curBubble.textContent = text;
+  area.appendChild(_curBubble);
+  area.scrollTop = area.scrollHeight;
+  _curText = text;
+  setSunnyTalking(true);
+  setTimeout(() => setSunnyTalking(false), text.length * 55 + 400);
+}
+
+function updateLastAiBubble(delta) {
+  if (!_curBubble) {
+    hideSunnyCenter();
+    const area = document.getElementById('chat-area');
+    _curBubble = document.createElement('div');
+    _curBubble.className = 'chat-bubble bubble-ai';
+    _curBubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    area.appendChild(_curBubble);
+  }
+  _curText += delta;
+  _curBubble.textContent = _curText;
+  document.getElementById('chat-area').scrollTop = 9999;
+}
+
+function finalizeAiBubble(text) {
+  if (_curBubble) _curBubble.textContent = text || _curText;
+  _curBubble = null; _curText = '';
+}
+
+function addUserBubble(text) {
+  hideSunnyCenter();
+  const area = document.getElementById('chat-area');
+  const b = document.createElement('div');
+  b.className = 'chat-bubble bubble-user';
+  b.textContent = text;
+  area.appendChild(b);
+  area.scrollTop = 9999;
+}
+
+function hideSunnyCenter() {
+  const c = document.getElementById('sunny-center');
+  if (c) c.style.display = 'none';
+}
+
+function showHint() {
+  const l = state.currentLesson; if (!l) return;
+  const e = l.expressions[Math.floor(Math.random() * l.expressions.length)];
+  const area = document.getElementById('chat-area');
+  const b = document.createElement('div');
+  b.className = 'chat-bubble bubble-hint';
+  b.textContent = '💡 힌트: "' + e.phrase + '" — ' + e.ko;
+  area.appendChild(b);
+  area.scrollTop = 9999;
+}
+
+function skipTurn() {
+  if (state.demoMode) {
+    if (state.demoIdx < DEMO_SCRIPT.length) addAiBubble(DEMO_SCRIPT[state.demoIdx++]);
+    return;
+  }
+  sendEvent({ type: 'response.create', response: { modalities: ['audio', 'text'] } });
+}
+
+function vocabTap(word) {
+  toast('💡 "' + word + '" 를 대화에서 사용해보세요!');
+}
+
+// ──────────────────────────────────────
+// End Session
+// ──────────────────────────────────────
+function confirmEndSession() {
+  if (confirm('세션을 종료하시겠습니까?')) endSession();
+}
+
+function endSession() {
+  clearInterval(state.timerInterval);
+  disconnectWebRTC();
+
+  if (!state.currentLesson || !state.currentStudent) { goTo('screen-lessons'); return; }
+
+  const elapsed = Math.floor((Date.now() - state.sessionStartTime) / 1000);
+  const session = {
+    id: Date.now(),
+    studentId: state.currentStudent.id,
+    studentName: state.currentStudent.name,
+    lessonId: state.currentLesson.id,
+    lessonTitle: state.currentLesson.title,
+    turns: state.sessionTurns,
+    seconds: elapsed,
+    date: new Date().toLocaleDateString('ko-KR'),
+    ts: Date.now(),
+  };
+  const sessions = LS.getSessions();
+  sessions.unshift(session);
+  if (sessions.length > 200) sessions.length = 200;
+  LS.saveSessions(sessions);
+  LS.addCompleted(state.currentStudent.id, state.currentLesson.id);
+  state.streak++;
+
+  // Populate complete screen
+  document.getElementById('complete-lesson-name').textContent =
+    state.currentLesson.icon + ' ' + state.currentLesson.title + ' 완료!';
+  document.getElementById('res-turns').textContent = state.sessionTurns;
+  document.getElementById('res-words').textContent = state.currentLesson.vocab.length;
+  document.getElementById('res-time').textContent = Math.max(1, Math.floor(elapsed / 60)) + '분';
+  document.getElementById('res-streak').textContent = '🔥' + state.streak;
+
+  document.getElementById('complete-vocab').innerHTML =
+    state.currentLesson.vocab.map(v =>
+      `<div class="vocab-review-item">
+        <span style="font-size:20px">${state.currentLesson.icon}</span>
+        <div><div class="word-en">${v.en}</div><div class="word-ko">${v.ko}</div></div>
+        <div style="margin-left:auto;font-size:11px;color:var(--text-muted);font-weight:600;max-width:110px;text-align:right;font-style:italic">${v.ex}</div>
+      </div>`
+    ).join('');
+
+  const feedbacks = [
+    `정말 잘했어요! 오늘 ${state.sessionTurns}번이나 말했어요. 대단해요! 🌟`,
+    `와우! ${state.currentLesson.title} 레슨 완료! 내일도 함께 해요 😊`,
+    `오늘 배운 ${state.currentLesson.vocab.length}개 단어를 기억해봐요! 💪`,
+    '훌륭해요! 영어가 점점 늘고 있어요! Keep it up! ⭐',
+  ];
+  document.getElementById('complete-feedback').textContent =
+    feedbacks[Math.floor(Math.random() * feedbacks.length)];
+
+  goTo('screen-complete');
+
+  // 비동기로 Firestore에 로그 저장
+  saveSessionToServer(session);
+}
+
+function disconnectWebRTC() {
+  if (state.peerConnection) { state.peerConnection.close(); state.peerConnection = null; }
+  if (state.dataChannel)    { state.dataChannel.close();    state.dataChannel = null; }
+  state.demoMode = false; state.demoIdx = 0; state.connected = false;
+}
+
+function repeatLesson() {
+  if (state.currentLesson) startLesson(state.currentLesson.id);
+}
+
+// ──────────────────────────────────────
+// Firestore 로그 저장 (saveSessionLog Function)
+// ──────────────────────────────────────
+async function saveSessionToServer(session) {
+  const settings = LS.getSettings();
+  if (!settings.functionsUrl) return;
+  // saveSessionLog URL 추측 (getRealtimeToken → saveSessionLog)
+  const logUrl = settings.functionsUrl.replace('getRealtimeToken', 'saveSessionLog');
+  try {
+    await fetch(logUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentId: session.studentId,
+        studentName: session.studentName,
+        lessonId: session.lessonId,
+        lessonTitle: session.lessonTitle,
+        turns: session.turns,
+        seconds: session.seconds,
+      }),
+    });
+  } catch (e) {
+    console.warn('세션 로그 서버 저장 실패 (로컬에는 저장됨):', e);
+  }
+}
+
+// ──────────────────────────────────────
+// Admin
+// ──────────────────────────────────────
+function renderAdminScreen() {
+  const s = LS.getSettings();
+  if (s.functionsUrl) document.getElementById('functions-url-input').value = s.functionsUrl;
+  if (s.appSecret)    document.getElementById('app-secret-input').value = s.appSecret;
+  if (s.model)        document.getElementById('model-select').value = s.model;
+  if (s.sessionLength) document.getElementById('session-length-select').value = s.sessionLength;
+  renderAdminStudents();
+  renderSessionLog();
+  renderLessonPreview();
+}
+
+function saveFunctionsConfig() {
+  const url = document.getElementById('functions-url-input').value.trim();
+  const sec = document.getElementById('app-secret-input').value.trim();
+  if (!url) { toast('Functions URL을 입력해주세요'); return; }
+  LS.saveSettings({ functionsUrl: url, appSecret: sec });
+  document.getElementById('url-saved-badge').textContent = '✅ 저장됨';
+  toast('✅ 서버 설정 저장 완료');
+  checkFunctionsStatus();
+}
+
+async function testFunctionsConnection() {
+  const url = document.getElementById('functions-url-input').value.trim();
+  const sec = document.getElementById('app-secret-input').value.trim();
+  const el = document.getElementById('test-result');
+  if (!url) { toast('URL을 먼저 입력하세요'); return; }
+  el.textContent = '⏳ 테스트 중...'; el.style.color = 'var(--text-muted)';
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-app-secret': sec },
+      body: JSON.stringify({ model: 'gpt-4o-mini-realtime-preview-2024-12-17', instructions: 'test' }),
+    });
+    if (res.ok) {
+      el.textContent = '✅ 연결 성공! Functions가 정상 동작합니다.';
+      el.style.color = 'var(--green)';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      el.textContent = '❌ 오류 ' + res.status + ': ' + (err.error || '');
+      el.style.color = 'var(--coral)';
+    }
+  } catch (e) {
+    el.textContent = '❌ 네트워크 오류: ' + e.message;
+    el.style.color = 'var(--coral)';
+  }
+}
+
+function saveModelSettings() {
+  LS.saveSettings({
+    model: document.getElementById('model-select').value,
+    sessionLength: parseInt(document.getElementById('session-length-select').value),
+  });
+  toast('✅ 모델 설정 저장 완료');
+}
+
+function addStudent() {
+  const name = document.getElementById('new-student-name').value.trim();
+  const pin  = document.getElementById('new-student-pin').value.trim();
+  if (!name) { toast('이름을 입력해주세요'); return; }
+  if (!/^\d{4}$/.test(pin)) { toast('PIN은 숫자 4자리입니다'); return; }
+  const students = LS.getStudents();
+  students.push({ id: 'S' + Date.now(), name, pin });
+  LS.saveStudents(students);
+  document.getElementById('new-student-name').value = '';
+  document.getElementById('new-student-pin').value = '';
+  renderAdminStudents(); renderStudentList();
+  toast('✅ ' + name + ' 추가 완료');
+}
+
+function deleteStudent(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  LS.saveStudents(LS.getStudents().filter(s => s.id !== id));
+  renderAdminStudents(); renderStudentList();
+  toast('삭제 완료');
+}
+
+function renderAdminStudents() {
+  const students = LS.getStudents();
+  const el = document.getElementById('student-admin-list');
+  if (!students.length) { el.innerHTML = '<p class="fs13 col-muted fw600">등록된 학생이 없습니다</p>'; return; }
+  el.innerHTML = students.map(s => {
+    const done = LS.getCompleted(s.id);
+    return `<div class="session-item">
+      <span style="font-size:20px">👤</span>
+      <div style="flex:1">
+        <div class="fw800 fs13">${s.name}</div>
+        <div class="fs12 col-muted fw600">PIN: ${s.pin} · 완료 레슨: ${done.length}개</div>
+      </div>
+      <button onclick="deleteStudent('${s.id}')" class="btn btn-ghost"
+              style="padding:6px 12px;font-size:12px;color:var(--coral)">삭제</button>
+    </div>`;
+  }).join('');
+}
+
+function renderSessionLog() {
+  const sessions = LS.getSessions().slice(0, 10);
+  const el = document.getElementById('session-log');
+  if (!sessions.length) { el.innerHTML = '<p class="fs13 col-muted fw600">세션 기록이 없습니다</p>'; return; }
+  el.innerHTML = sessions.map(s =>
+    `<div class="session-item">
+      <span style="font-size:18px">💬</span>
+      <div style="flex:1">
+        <div class="fw800 fs13">${s.studentName} · ${s.lessonTitle}</div>
+        <div class="fs12 col-muted fw600">${s.date} · ${s.turns}회 대화 · ${Math.floor(s.seconds/60)}분</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function renderLessonPreview() {
+  document.getElementById('lesson-preview-list').innerHTML = LESSONS.map(l =>
+    `<div class="session-item">
+      <span style="font-size:20px">${l.icon}</span>
+      <div style="flex:1">
+        <div class="fw800 fs13">Day ${l.day}: ${l.title}</div>
+        <div class="fs12 col-muted fw600">${l.titleKo} · 단어 ${l.vocab.length}개 · ${l.level}</div>
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ──────────────────────────────────────
+// 연결 상태 확인
+// ──────────────────────────────────────
+async function checkFunctionsStatus() {
+  const settings = LS.getSettings();
+  const badge = document.getElementById('conn-status');
+  if (!settings.functionsUrl) {
+    badge.className = 'status-badge status-demo mt12';
+    badge.textContent = '⚠️ Functions URL 미설정 (데모 모드)';
+    return;
+  }
+  badge.className = 'status-badge status-connecting mt12';
+  badge.textContent = '⏳ 서버 확인 중...';
+  try {
+    const res = await fetch(settings.functionsUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-app-secret': settings.appSecret || '' },
+      body: JSON.stringify({ model: 'gpt-4o-mini-realtime-preview-2024-12-17', instructions: 'ping' }),
+    });
+    if (res.ok) {
+      badge.className = 'status-badge status-connected mt12';
+      badge.textContent = '🟢 서버 연결됨';
+    } else {
+      badge.className = 'status-badge status-error mt12';
+      badge.textContent = '❌ 서버 오류 ' + res.status;
+    }
+  } catch {
+    badge.className = 'status-badge status-error mt12';
+    badge.textContent = '❌ 서버 연결 불가';
+  }
+}
+
+// ──────────────────────────────────────
+// Init
+// ──────────────────────────────────────
+function init() {
+  // 데모 학생 추가 (처음 실행 시)
+  if (!LS.getStudents().length) {
+    LS.saveStudents([
+      { id: 'S_demo1', name: '민서', pin: '1234' },
+      { id: 'S_demo2', name: '준호', pin: '1234' },
+      { id: 'S_demo3', name: '지유', pin: '1234' },
+    ]);
+  }
+  renderStudentList();
+  checkFunctionsStatus();
+}
+
+init();
+</script>
+</body>
+</html>
